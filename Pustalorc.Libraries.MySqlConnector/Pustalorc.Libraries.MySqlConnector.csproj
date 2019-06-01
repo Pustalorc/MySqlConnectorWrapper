@@ -7,8 +7,8 @@
     <ProjectGuid>{9B04B44D-D7C0-4798-BF80-69E1581DD910}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Pustalorc.Libraries.AbstractDatabase</RootNamespace>
-    <AssemblyName>Pustalorc.Libraries.AbstractDatabase</AssemblyName>
+    <RootNamespace>Pustalorc.Libraries.MySqlConnector</RootNamespace>
+    <AssemblyName>Pustalorc.Libraries.MySqlConnector</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -59,14 +59,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AbstractDatabase.cs" />
-    <Compile Include="AbstractDatabaseConfiguration.cs" />
-    <Compile Include="Cache.cs" />
-    <Compile Include="DatabaseQueue.cs" />
+    <Compile Include="Caching\Cache.cs" />
+    <Compile Include="Caching\SmartCache.cs" />
+    <Compile Include="Configuration\DefaultConnectorConfiguration.cs" />
+    <Compile Include="Configuration\IConnectorConfiguration.cs" />
+    <Compile Include="Connector.cs" />
+    <Compile Include="DatabaseStructure\Column.cs" />
+    <Compile Include="DatabaseStructure\Row.cs" />
+    <Compile Include="Delegates\ReaderCallback.cs" />
+    <Compile Include="Delegates\ScalarCallback.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="EQueueableType.cs" />
-    <Compile Include="QueueableQuery.cs" />
-    <Compile Include="Row.cs" />
+    <Compile Include="Queueing\ConnectorQueue.cs" />
+    <Compile Include="Queueing\EQueueableQueryType.cs" />
+    <Compile Include="Queueing\QueueableQuery.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
