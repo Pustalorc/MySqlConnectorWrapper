@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
 using Pustalorc.Libraries.MySqlConnector.Configuration;
+using Pustalorc.Libraries.MySqlConnector.Queries;
 
 namespace Pustalorc.Libraries.MySqlConnector.Queueing
 {
@@ -72,18 +73,18 @@ namespace Pustalorc.Libraries.MySqlConnector.Queueing
                     item = _queue.Dequeue();
                 }
 
-                switch (item.QueryQueryType)
+                switch (item.Query.QueryType)
                 {
 #pragma warning disable 618
                     // Disabled 618 as this is executed safely on a separate thread which background worker runs from.
-                    case EQueueableQueryType.Reader:
-                        _connector.ExecuteReader(item.Query);
+                    case EQueryType.Reader:
+                        item.QueryCallback(item.Query, _connector.ExecuteReader(item.Query.QueryString));
                         break;
-                    case EQueueableQueryType.Scalar:
-                        _connector.ExecuteScalar(item.Query);
+                    case EQueryType.Scalar:
+                        item.QueryCallback(item.Query, _connector.ExecuteScalar(item.Query.QueryString));
                         break;
-                    case EQueueableQueryType.NonQuery:
-                        _connector.ExecuteNonQuery(item.Query);
+                    case EQueryType.NonQuery:
+                        _connector.ExecuteNonQuery(item.Query.QueryString);
                         break;
 #pragma warning restore 618
                 }

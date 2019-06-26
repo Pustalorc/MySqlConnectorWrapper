@@ -44,5 +44,10 @@ namespace Pustalorc.Libraries.MySqlConnector.Configuration
         ///     Determines the maximum number of items the cache should hold at all times.
         /// </summary>
         int MaxCacheSize { get; }
+
+        /// <summary>
+        ///     Determines how long each cache object should wait before retrieving information from the database about itself.
+        /// </summary>
+        ulong CacheRefreshIntervalMilliseconds { get; }
     }
 }

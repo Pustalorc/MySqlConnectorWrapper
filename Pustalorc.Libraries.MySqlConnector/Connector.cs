@@ -5,6 +5,7 @@ using MySql.Data.MySqlClient;
 using Pustalorc.Libraries.MySqlConnector.Caching;
 using Pustalorc.Libraries.MySqlConnector.Configuration;
 using Pustalorc.Libraries.MySqlConnector.Delegates;
+using Pustalorc.Libraries.MySqlConnector.Queries;
 using Pustalorc.Libraries.MySqlConnector.Queueing;
 using Pustalorc.Libraries.MySqlConnector.TableStructure;
 
@@ -159,7 +160,7 @@ namespace Pustalorc.Libraries.MySqlConnector
         public void RequestNonQuery(params string[] queries)
         {
             foreach (var query in queries)
-                _connectorQueue.Enqueue(new QueueableQuery(query, EQueueableQueryType.NonQuery));
+                _connectorQueue.Enqueue(new QueueableQuery(new Query(query, EQueryType.NonQuery), null));
         }
 
         /// <summary>
@@ -168,27 +169,29 @@ namespace Pustalorc.Libraries.MySqlConnector
         /// </summary>
         /// <param name="callback">The callback function/delegate for the result for each query.</param>
         /// <param name="queries">The queries to be executed.</param>
-        public void RequestReader(ReaderCallback callback, params string[] queries)
+        public void RequestReader(QueryCallback callback, params string[] queries)
         {
             // Code must be re-written to be compliant with changes to execution: Query shall execute at all times and call the callback once complete.
             // Cache shall also be updated on its own separate timer within the Cache object.
             foreach (var query in queries)
             {
+                var q = new Query(query, EQueryType.Reader);
+
                 if (!Configuration.UseCache)
                 {
-                    callback(query, ExecuteReader(query));
+                    callback(q, ExecuteReader(query));
                     return;
                 }
 
-                var cache = _smartCache.GetItemInCache(query);
+                var cache = _smartCache.GetItemInCache(q);
                 if (cache == null)
                 {
-                    callback(query, ExecuteReader(query));
+                    callback(q, ExecuteReader(query));
                     return;
                 }
 
-                _connectorQueue.Enqueue(new QueueableQuery(query, EQueueableQueryType.Reader));
-                callback(query, (List<Row>) cache.Output);
+                _connectorQueue.Enqueue(new QueueableQuery(q, callback));
+                callback(q, (List<Row>) cache.Output);
             }
         }
 
@@ -198,27 +201,29 @@ namespace Pustalorc.Libraries.MySqlConnector
         /// </summary>
         /// <param name="callback">The callback function/delegate for the result for each query.</param>
         /// <param name="queries">The queries to be executed.</param>
-        public void RequestScalar(ScalarCallback callback, params string[] queries)
+        public void RequestScalar(QueryCallback callback, params string[] queries)
         {
             // Code must be re-written to be compliant with changes to execution: Query shall execute at all times and call the callback once complete.
             // Cache shall also be updated on its own separate timer within the Cache object.
             foreach (var query in queries)
             {
+                var q = new Query(query, EQueryType.Scalar);
+
                 if (!Configuration.UseCache)
                 {
-                    callback(query, ExecuteScalar(query));
+                    callback(q, ExecuteScalar(query));
                     return;
                 }
 
-                var cache = _smartCache.GetItemInCache(query);
+                var cache = _smartCache.GetItemInCache(q);
                 if (cache == null)
                 {
-                    callback(query, ExecuteScalar(query));
+                    callback(q, ExecuteScalar(query));
                     return;
                 }
 
-                _connectorQueue.Enqueue(new QueueableQuery(query, EQueueableQueryType.Scalar));
-                callback(query, cache.Output);
+                _connectorQueue.Enqueue(new QueueableQuery(q, callback));
+                callback(q, cache.Output);
             }
         }
 
@@ -301,7 +306,7 @@ namespace Pustalorc.Libraries.MySqlConnector
                     Connection.Close();
             }
 
-            if (Configuration.UseCache) _smartCache.UpdateStoreItemInCache(query, result);
+            if (Configuration.UseCache) _smartCache.UpdateStoreItemInCache(new Query(query, EQueryType.Reader), result);
 
             return result;
         }
@@ -334,7 +339,7 @@ namespace Pustalorc.Libraries.MySqlConnector
                     Connection.Close();
             }
 
-            if (Configuration.UseCache) _smartCache.UpdateStoreItemInCache(query, result);
+            if (Configuration.UseCache) _smartCache.UpdateStoreItemInCache(new Query(query, EQueryType.Scalar), result);
 
             return result;
         }

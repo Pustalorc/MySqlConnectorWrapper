@@ -15,5 +15,6 @@ namespace Pustalorc.Libraries.MySqlConnector.Configuration
         public bool UseSeparateThread => true;
         public bool UseCache => true;
         public int MaxCacheSize => 10;
+        public ulong CacheRefreshIntervalMilliseconds => 10000;
     }
 }

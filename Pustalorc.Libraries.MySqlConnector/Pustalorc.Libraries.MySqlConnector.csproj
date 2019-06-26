@@ -64,14 +64,14 @@
     <Compile Include="Configuration\DefaultConnectorConfiguration.cs" />
     <Compile Include="Configuration\IConnectorConfiguration.cs" />
     <Compile Include="Connector.cs" />
+    <Compile Include="Queries\Query.cs" />
+    <Compile Include="Queries\QueueableQuery.cs" />
     <Compile Include="TableStructure\Column.cs" />
     <Compile Include="TableStructure\Row.cs" />
-    <Compile Include="Delegates\ReaderCallback.cs" />
-    <Compile Include="Delegates\ScalarCallback.cs" />
+    <Compile Include="Delegates\QueryCallback.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Queueing\ConnectorQueue.cs" />
-    <Compile Include="Queueing\EQueueableQueryType.cs" />
-    <Compile Include="Queueing\QueueableQuery.cs" />
+    <Compile Include="Queueing\EQueryType.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

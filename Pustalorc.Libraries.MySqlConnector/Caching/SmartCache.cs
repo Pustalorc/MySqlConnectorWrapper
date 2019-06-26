@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Pustalorc.Libraries.MySqlConnector.Configuration;
+using Pustalorc.Libraries.MySqlConnector.Queries;
+
+// This is not finished or documented, please avoid reviewing this.
 
 namespace Pustalorc.Libraries.MySqlConnector.Caching
 {
@@ -16,11 +19,11 @@ namespace Pustalorc.Libraries.MySqlConnector.Caching
             _maxCacheSize = connector.Configuration.MaxCacheSize;
         }
 
-        public Cache GetItemInCache(string query)
+        public Cache GetItemInCache(Query query)
         {
             return _cache.Find(k =>
-                !string.IsNullOrEmpty(k?.Query) &&
-                string.Equals(k.Query, query, StringComparison.InvariantCultureIgnoreCase));
+                !string.IsNullOrEmpty(k?.Query?.QueryString) && string.Equals(k.Query.QueryString, query.QueryString,
+                    StringComparison.InvariantCultureIgnoreCase));
         }
 
         private int GetUselessIndex()
@@ -28,7 +31,7 @@ namespace Pustalorc.Libraries.MySqlConnector.Caching
             return 1;
         }
 
-        public void UpdateStoreItemInCache(string query, object output)
+        public void UpdateStoreItemInCache(Query query, object output)
         {
             var cache = GetItemInCache(query);
             if (cache == null)
