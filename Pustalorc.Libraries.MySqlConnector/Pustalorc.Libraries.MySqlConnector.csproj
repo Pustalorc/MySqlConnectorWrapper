@@ -64,8 +64,8 @@
     <Compile Include="Configuration\DefaultConnectorConfiguration.cs" />
     <Compile Include="Configuration\IConnectorConfiguration.cs" />
     <Compile Include="Connector.cs" />
-    <Compile Include="DatabaseStructure\Column.cs" />
-    <Compile Include="DatabaseStructure\Row.cs" />
+    <Compile Include="TableStructure\Column.cs" />
+    <Compile Include="TableStructure\Row.cs" />
     <Compile Include="Delegates\ReaderCallback.cs" />
     <Compile Include="Delegates\ScalarCallback.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

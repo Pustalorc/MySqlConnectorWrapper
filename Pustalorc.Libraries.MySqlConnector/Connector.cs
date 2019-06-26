@@ -4,9 +4,9 @@ using System.Data;
 using MySql.Data.MySqlClient;
 using Pustalorc.Libraries.MySqlConnector.Caching;
 using Pustalorc.Libraries.MySqlConnector.Configuration;
-using Pustalorc.Libraries.MySqlConnector.DatabaseStructure;
 using Pustalorc.Libraries.MySqlConnector.Delegates;
 using Pustalorc.Libraries.MySqlConnector.Queueing;
+using Pustalorc.Libraries.MySqlConnector.TableStructure;
 
 namespace Pustalorc.Libraries.MySqlConnector
 {
@@ -19,7 +19,7 @@ namespace Pustalorc.Libraries.MySqlConnector
         /// <summary>
         ///     The queue that the connector should use.
         /// </summary>
-        private readonly Queueing.ConnectorQueue<T> _connectorQueue;
+        private readonly ConnectorQueue<T> _connectorQueue;
 
         /// <summary>
         ///     The caching system that the connector should use.
@@ -42,14 +42,11 @@ namespace Pustalorc.Libraries.MySqlConnector
         /// <param name="configuration">The instance of type T to be used as main configuration</param>
         public Connector(T configuration)
         {
-            // Assigns input config to variable config.
             Configuration = configuration;
 
-            // Creates default internal classes.
             _smartCache = new SmartCache<T>(this);
-            _connectorQueue = new Queueing.ConnectorQueue<T>(this);
+            _connectorQueue = new ConnectorQueue<T>(this);
 
-            // Verifies that a connection to the provided database config is possible.
             try
             {
                 Connection.Open();
@@ -115,7 +112,7 @@ namespace Pustalorc.Libraries.MySqlConnector
         }
 
         /// <summary>
-        /// Transforms the input into a valid encapsulated value that can be used in a MySql ConnectionString.
+        ///     Transforms the input into a valid encapsulated value that can be used in a MySql ConnectionString.
         /// </summary>
         /// <param name="input">The value to encapsulate.</param>
         /// <returns>The input but encapsulated.</returns>
@@ -129,20 +126,30 @@ namespace Pustalorc.Libraries.MySqlConnector
 
             if (!input.Contains("\"")) return $"\"{input}\"";
 
-            if (input.StartsWith("\""))
+            return input.StartsWith("\"", StringComparison.InvariantCulture)
+                ? $"'{RepeatChar(input, '\'')}'"
+                : $"\"{RepeatChar(input, '\"')}\"";
+        }
+
+        /// <summary>
+        ///     Repeats a specific character in the string if found.
+        /// </summary>
+        /// <param name="input">The input string to cycle through.</param>
+        /// <param name="character">The character to repeat.</param>
+        /// <returns>A new string with the selected character repeated.</returns>
+        private string RepeatChar(string input, char character)
+        {
+            var output = "";
+
+            foreach (var c in input)
             {
-                // Repeat `'` in the string twice, then encapsulate.
-                return $"'{input}'";
+                if (c == character)
+                    output += c;
+
+                output += c;
             }
 
-            if (input.StartsWith("'"))
-            {
-                // Repeat '"' in the string twice, then encapsulate.
-                return $"\"{input}\"";
-            }
-
-            // Repeat '"' in the string twice, then encapsulate.
-            return $"\"{input}\"";
+            return output;
         }
 
         /// <summary>
@@ -294,7 +301,7 @@ namespace Pustalorc.Libraries.MySqlConnector
                     Connection.Close();
             }
 
-            if (Configuration.UseCache) UpdateCache(query, result);
+            if (Configuration.UseCache) _smartCache.UpdateStoreItemInCache(query, result);
 
             return result;
         }
@@ -327,18 +334,9 @@ namespace Pustalorc.Libraries.MySqlConnector
                     Connection.Close();
             }
 
-            if (Configuration.UseCache) UpdateCache(query, result);
+            if (Configuration.UseCache) _smartCache.UpdateStoreItemInCache(query, result);
 
             return result;
-        }
-
-        // Move to _smartCache.UpdateStoreItemInCache(query, output);
-        private void UpdateCache(string query, object output)
-        {
-            var cache = _smartCache.GetItemInCache(query);
-            if (cache == null) _smartCache.StoreItemInCache(new Cache(query, output));
-
-            _smartCache.UpdateItemInCache(cache, output);
         }
     }
 }

@@ -23,24 +23,27 @@ namespace Pustalorc.Libraries.MySqlConnector.Caching
                 string.Equals(k.Query, query, StringComparison.InvariantCultureIgnoreCase));
         }
 
-        public void StoreItemInCache(Cache item)
-        {
-            if (_cache.Count == _maxCacheSize)
-            {
-                var index = GetUselessIndex();
-                _cache[index] = item;
-            }
-
-            _cache.Add(item);
-        }
-
         private int GetUselessIndex()
         {
             return 1;
         }
 
-        public void UpdateItemInCache(Cache cache, object output)
+        public void UpdateStoreItemInCache(string query, object output)
         {
+            var cache = GetItemInCache(query);
+            if (cache == null)
+            {
+                var item = new Cache(query, output);
+
+                if (_cache.Count == _maxCacheSize)
+                {
+                    var index = GetUselessIndex();
+                    _cache[index] = item;
+                }
+
+                _cache.Add(item);
+            }
+
             _cache[_cache.IndexOf(cache)].Output = output;
         }
     }
