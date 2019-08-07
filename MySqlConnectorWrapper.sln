@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.271
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pustalorc.Libraries.MySqlConnector", "Pustalorc.Libraries.MySqlConnector\Pustalorc.Libraries.MySqlConnector.csproj", "{9B04B44D-D7C0-4798-BF80-69E1581DD910}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MySqlConnectorWrapper", "MySqlConnectorWrapper.csproj", "{9B04B44D-D7C0-4798-BF80-69E1581DD910}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
