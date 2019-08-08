@@ -51,7 +51,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         /// </summary>
         /// <param name="cache">The item to remove from cache.</param>
         /// <returns>If it successfully removed the item from the cache.</returns>
-        public bool RemoveItemFromCache(Cache cache)
+        private bool RemoveItemFromCache(Cache cache)
         {
             return _cache.Remove(cache);
         }

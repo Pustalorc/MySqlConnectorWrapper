@@ -94,7 +94,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         /// </summary>
         /// <param name="callback">The callback function/delegate for the result for each query.</param>
         /// <param name="queries">The queries to be executed.</param>
-        public void RequestQuery(QueryCallback callback, params Query[] queries)
+        public void RequestQueryExecute(QueryCallback callback, params Query[] queries)
         {
             foreach (var query in queries)
             {
@@ -103,7 +103,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                     var cache = _cacheManager.GetItemInCache(query);
                     if (cache != null)
                     {
-                        callback(query, cache.Output);
+                        callback?.Invoke(query, cache.Output);
                         continue;
                     }
                 }
@@ -113,67 +113,69 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         }
 
         /// <summary>
-        ///     Executes a query, ignoring any caching, queueing or multi-threading.
+        ///     Executes a list of query, ignoring any caching, queueing or multi-threading.
         /// </summary>
-        /// <param name="query">The query to execute.</param>
+        /// <param name="queries">The queries to be executed.</param>
         /// <returns>The result of the query executed.</returns>
-        public object ExecuteQuery(Query query)
+        public object ExecuteQuery(params Query[] queries)
         {
             object result = null;
             MySqlDataReader reader = null;
 
-            try
+            foreach (var query in queries)
             {
-                var command = Connection.CreateCommand();
-                command.CommandText = query.QueryString;
-
-                foreach (var param in query.QueryParameters)
-                    command.Parameters.AddWithValue(param.Name, param.Value);
-
-                Connection.Open();
-                switch (query.QueryType)
+                try
                 {
-                    case EQueryType.NonQuery:
-                        result = command.ExecuteNonQuery();
-                        break;
-                    case EQueryType.Scalar:
-                        result = command.ExecuteScalar();
-                        break;
-                    case EQueryType.Reader:
-                        var readerResult = new List<Row>();
+                    var command = Connection.CreateCommand();
+                    command.CommandText = query.QueryString;
 
-                        reader = command.ExecuteReader();
-                        while (reader.Read())
-                            try
-                            {
-                                var columns = new List<Column>();
+                    foreach (var param in query.QueryParameters)
+                        command.Parameters.AddWithValue(param.Name, param.Value);
 
-                                for (var i = 0; i < reader.FieldCount; i++)
-                                    columns.Add(new Column(reader.GetName(i), reader.GetValue(i)));
+                    Connection.Open();
+                    switch (query.QueryType)
+                    {
+                        case EQueryType.NonQuery:
+                            result = command.ExecuteNonQuery();
+                            break;
+                        case EQueryType.Scalar:
+                            result = command.ExecuteScalar();
+                            break;
+                        case EQueryType.Reader:
+                            var readerResult = new List<Row>();
 
-                                readerResult.Add(new Row(columns));
-                            }
-                            catch (Exception ex)
-                            {
-                                Utils.LogConsole("MySqlConnectorWrapper.Reader",
-                                    $"Query \"{query}\" threw:\n{ex.Message}");
-                            }
+                            reader = command.ExecuteReader();
+                            while (reader.Read())
+                                try
+                                {
+                                    var columns = new List<Column>();
 
-                        result = readerResult;
-                        break;
+                                    for (var i = 0; i < reader.FieldCount; i++)
+                                        columns.Add(new Column(reader.GetName(i), reader.GetValue(i)));
+
+                                    readerResult.Add(new Row(columns));
+                                }
+                                catch (Exception ex)
+                                {
+                                    Utils.LogConsole("MySqlConnectorWrapper.Reader",
+                                        $"Query \"{query}\" threw:\n{ex.Message}");
+                                }
+
+                            result = readerResult;
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Utils.LogConsole("MySqlConnectorWrapper.ExecuteQuery", $"Query \"{query}\" threw:\n{ex.Message}");
+                }
+                finally
+                {
+                    reader?.Close();
+                    Connection.Close();
                 }
             }
-            catch (Exception ex)
-            {
-                Utils.LogConsole("MySqlConnectorWrapper.ExecuteQuery", $"Query \"{query}\" threw:\n{ex.Message}");
-            }
-            finally
-            {
-                reader?.Close();
-                Connection.Close();
-            }
 
-            _cacheManager?.StoreItemInCache(query, result);
             return result;
         }
 
@@ -182,9 +184,19 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         /// </summary>
         /// <param name="query">The query related to the item in cache to be removed.</param>
         /// <returns>If it successfully removed the item from the cache.</returns>
-        public bool RemoveItemFromCache(Query query)
+        protected bool RemoveItemFromCache(Query query)
         {
             return _cacheManager.RemoveItemFromCache(query);
+        }
+
+        /// <summary>
+        ///     Stores a query output into the cache.
+        /// </summary>
+        /// <param name="query">The query that was executed.</param>
+        /// <param name="output">The output of the executed query.</param>
+        protected internal void StoreItemInCache(Query query, object output)
+        {
+            _cacheManager.StoreItemInCache(query, output);
         }
     }
 }

@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Timers;
 using Pustalorc.Libraries.MySqlConnectorWrapper.Configuration;
-using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
 
 namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
 {
@@ -14,7 +13,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
         /// <summary>
         ///     The instance of the connector.
         /// </summary>
-        private readonly ConnectorWrapper<T> _connectorWrapper;
+        private readonly ConnectorWrapper<T> _connector;
 
         /// <summary>
         ///     The actual queue for queries.
@@ -34,10 +33,10 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
         /// <summary>
         ///     Instantiates the connector queue. Requires the instance of the connector.
         /// </summary>
-        /// <param name="connectorWrapper">The instance of the connector being used.</param>
-        internal ConnectorQueue(ConnectorWrapper<T> connectorWrapper)
+        /// <param name="connector">The instance of the connector being used.</param>
+        internal ConnectorQueue(ConnectorWrapper<T> connector)
         {
-            _connectorWrapper = connectorWrapper;
+            _connector = connector;
 
             _tick.Elapsed += ProcessQueue;
             _tick.Start();
@@ -67,7 +66,11 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
                 item = _queue.Dequeue();
             }
 
-            item.QueryCallback(item.Query, _connectorWrapper.ExecuteQuery(item.Query));
+            var output = _connector.ExecuteQuery(item.Query);
+
+            if (item.Query.ShouldCache) _connector.StoreItemInCache(item.Query, output);
+
+            item.QueryCallback?.Invoke(item.Query, output);
         }
     }
 }
