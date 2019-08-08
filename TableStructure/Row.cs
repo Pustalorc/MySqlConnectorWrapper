@@ -1,6 +1,7 @@
 using System.Collections.Generic;
+using System.Linq;
 
-namespace Pustalorc.Libraries.MySqlConnector.TableStructure
+namespace Pustalorc.Libraries.MySqlConnectorWrapper.TableStructure
 {
     /// <summary>
     ///     Defines a Row in a table.
@@ -11,5 +12,10 @@ namespace Pustalorc.Libraries.MySqlConnector.TableStructure
         ///     The columns that this row has.
         /// </summary>
         public List<Column> Columns;
+
+        public Row(IEnumerable<Column> columns)
+        {
+            Columns = columns.ToList();
+        }
     }
 }

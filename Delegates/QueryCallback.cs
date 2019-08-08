@@ -1,6 +1,6 @@
-using Pustalorc.Libraries.MySqlConnector.Queries;
+using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
 
-namespace Pustalorc.Libraries.MySqlConnector.Delegates
+namespace Pustalorc.Libraries.MySqlConnectorWrapper.Delegates
 {
     /// <summary>
     ///     Callback for any queries that finished execution and required a return value.

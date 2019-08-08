@@ -1,6 +1,7 @@
-using Pustalorc.Libraries.MySqlConnector.Delegates;
+using Pustalorc.Libraries.MySqlConnectorWrapper.Delegates;
+using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
 
-namespace Pustalorc.Libraries.MySqlConnector.Queries
+namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
 {
     /// <summary>
     ///     Base class for a query that can be queued.
@@ -13,7 +14,7 @@ namespace Pustalorc.Libraries.MySqlConnector.Queries
         public readonly Query Query;
 
         /// <summary>
-        ///     The type of query (and execution) that this object defines.
+        ///     The callback to be called when execution of the query completes.
         /// </summary>
         public readonly QueryCallback QueryCallback;
 

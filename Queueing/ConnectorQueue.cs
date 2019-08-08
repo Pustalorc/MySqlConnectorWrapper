@@ -1,10 +1,9 @@
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Threading;
-using Pustalorc.Libraries.MySqlConnector.Configuration;
-using Pustalorc.Libraries.MySqlConnector.Queries;
+using System.Timers;
+using Pustalorc.Libraries.MySqlConnectorWrapper.Configuration;
+using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
 
-namespace Pustalorc.Libraries.MySqlConnector.Queueing
+namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
 {
     /// <summary>
     ///     The queue for the connector. Automatically instantiated when the connector is instantiated.
@@ -15,7 +14,7 @@ namespace Pustalorc.Libraries.MySqlConnector.Queueing
         /// <summary>
         ///     The instance of the connector.
         /// </summary>
-        private readonly Connector<T> _connector;
+        private readonly ConnectorWrapper<T> _connectorWrapper;
 
         /// <summary>
         ///     The actual queue for queries.
@@ -28,27 +27,26 @@ namespace Pustalorc.Libraries.MySqlConnector.Queueing
         private readonly object _queueLock = new object();
 
         /// <summary>
-        ///     The BackgroundWorker to process the queue.
+        ///     The timer to tick every 125ms to process the queue.
         /// </summary>
-        private readonly BackgroundWorker _queueProcessor = new BackgroundWorker();
+        private readonly Timer _tick = new Timer(125);
 
         /// <summary>
         ///     Instantiates the connector queue. Requires the instance of the connector.
         /// </summary>
-        /// <param name="connector">The instance of the connector being used.</param>
-        public ConnectorQueue(Connector<T> connector)
+        /// <param name="connectorWrapper">The instance of the connector being used.</param>
+        internal ConnectorQueue(ConnectorWrapper<T> connectorWrapper)
         {
-            _connector = connector;
+            _connectorWrapper = connectorWrapper;
 
-            _queueProcessor.WorkerSupportsCancellation = false;
-            _queueProcessor.DoWork += Queue_DoWork;
-            _queueProcessor.RunWorkerAsync();
+            _tick.Elapsed += ProcessQueue;
+            _tick.Start();
         }
 
         /// <summary>
-        ///     Queues a new QueueableQuery.
+        ///     Enqueues a new QueueableQuery.
         /// </summary>
-        /// <param name="item">The query to be queued for execution.</param>
+        /// <param name="item">The query to be enqueued for execution.</param>
         public void Enqueue(QueueableQuery item)
         {
             lock (_queueLock)
@@ -57,38 +55,19 @@ namespace Pustalorc.Libraries.MySqlConnector.Queueing
             }
         }
 
-        private void Queue_DoWork(object sender, DoWorkEventArgs e)
+        private void ProcessQueue(object sender, ElapsedEventArgs e)
         {
-            while (true)
+            QueueableQuery item;
+
+            lock (_queueLock)
             {
-                QueueableQuery item;
+                if (_queue.Count <= 0)
+                    return;
 
-                Thread.Sleep(125);
-
-                lock (_queueLock)
-                {
-                    if (_queue.Count <= 0)
-                        continue;
-
-                    item = _queue.Dequeue();
-                }
-
-                switch (item.Query.QueryType)
-                {
-#pragma warning disable 618
-                    // Disabled 618 as this is executed safely on a separate thread which background worker runs from.
-                    case EQueryType.Reader:
-                        item.QueryCallback(item.Query, _connector.ExecuteReader(item.Query.QueryString));
-                        break;
-                    case EQueryType.Scalar:
-                        item.QueryCallback(item.Query, _connector.ExecuteScalar(item.Query.QueryString));
-                        break;
-                    case EQueryType.NonQuery:
-                        _connector.ExecuteNonQuery(item.Query.QueryString);
-                        break;
-#pragma warning restore 618
-                }
+                item = _queue.Dequeue();
             }
+
+            item.QueryCallback(item.Query, _connectorWrapper.ExecuteQuery(item.Query));
         }
     }
 }

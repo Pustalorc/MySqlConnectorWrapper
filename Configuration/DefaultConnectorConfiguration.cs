@@ -1,4 +1,4 @@
-namespace Pustalorc.Libraries.MySqlConnector.Configuration
+namespace Pustalorc.Libraries.MySqlConnectorWrapper.Configuration
 {
     /// <inheritdoc />
     /// <summary>
@@ -12,9 +12,7 @@ namespace Pustalorc.Libraries.MySqlConnector.Configuration
         public string DatabaseUsername => "root";
         public string DatabasePassword => "password";
         public string DatabaseName => "database";
-        public bool UseSeparateThread => true;
         public bool UseCache => true;
-        public int MaxCacheSize => 10;
-        public ulong CacheRefreshIntervalMilliseconds => 10000;
+        public ulong CacheRefreshIntervalMilliseconds => 1250;
     }
 }

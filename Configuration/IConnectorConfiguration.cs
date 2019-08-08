@@ -1,4 +1,4 @@
-namespace Pustalorc.Libraries.MySqlConnector.Configuration
+namespace Pustalorc.Libraries.MySqlConnectorWrapper.Configuration
 {
     /// <summary>
     ///     Basic configuration required for the connector to work properly.
@@ -31,19 +31,9 @@ namespace Pustalorc.Libraries.MySqlConnector.Configuration
         string DatabaseName { get; }
 
         /// <summary>
-        ///     If set to true, every connection and query will utilize a separate thread.
-        /// </summary>
-        bool UseSeparateThread { get; }
-
-        /// <summary>
         ///     If set to true, any read queries will also be cached and updated once in a while.
         /// </summary>
         bool UseCache { get; }
-
-        /// <summary>
-        ///     Determines the maximum number of items the cache should hold at all times.
-        /// </summary>
-        int MaxCacheSize { get; }
 
         /// <summary>
         ///     Determines how long each cache object should wait before retrieving information from the database about itself.
