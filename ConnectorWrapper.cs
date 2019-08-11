@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using MySql.Data.MySqlClient;
 using Pustalorc.Libraries.MySqlConnectorWrapper.Caching;
 using Pustalorc.Libraries.MySqlConnectorWrapper.Configuration;
-using Pustalorc.Libraries.MySqlConnectorWrapper.Delegates;
 using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
 using Pustalorc.Libraries.MySqlConnectorWrapper.Queueing;
 using Pustalorc.Libraries.MySqlConnectorWrapper.TableStructure;
@@ -32,12 +31,8 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         protected internal readonly T Configuration;
 
         /// <summary>
-        ///     The connection to the MySql database.
-        /// </summary>
-        private MySqlConnection _connection;
-
-        /// <summary>
         ///     Default constructor, only requires an instance of type T to be used as main configuration.
+        ///     This already tests if the connection can be opened or not.
         /// </summary>
         /// <param name="configuration">The instance of type T to be used as main configuration</param>
         protected ConnectorWrapper(T configuration)
@@ -48,25 +43,25 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
 
             _connectorQueue = new ConnectorQueue<T>(this);
 
-            try
+            using (var connection = CreateConnection())
             {
-                Connection.Open();
-            }
-            catch (MySqlException ex)
-            {
-                Utils.LogConsole("MySqlConnectorWrapper.Constructor",
-                    ex.Number == 1042 ? "Can't connect to MySQL host." : ex.Message);
-            }
-            finally
-            {
-                Connection.Close();
+                try
+                {
+                    connection.Open();
+                }
+                catch (MySqlException ex)
+                {
+                    Utils.LogConsole("MySqlConnectorWrapper.Constructor",
+                        ex.Number == 1042 ? "Can't connect to MySQL host." : ex.Message);
+
+                    throw;
+                }
+                finally
+                {
+                    connection.Close();
+                }
             }
         }
-
-        /// <summary>
-        ///     Property to store a single connection and create it if it doesn't exist.
-        /// </summary>
-        private MySqlConnection Connection => _connection ?? (_connection = CreateConnection());
 
         /// <summary>
         ///     Creates the connection to the MySql Database
@@ -92,87 +87,130 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         /// <summary>
         ///     Requests to execute a list of queries.
         /// </summary>
-        /// <param name="callback">The callback function/delegate for the result for each query.</param>
         /// <param name="queries">The queries to be executed.</param>
-        public void RequestQueryExecute(QueryCallback callback, params Query[] queries)
+        public void RequestQueryExecute(params Query[] queries)
         {
             foreach (var query in queries)
             {
-                if (Configuration.UseCache)
+                if (Configuration.UseCache && query.ShouldCache && query.QueryCallback != null)
                 {
                     var cache = _cacheManager.GetItemInCache(query);
                     if (cache != null)
                     {
-                        callback?.Invoke(query, cache.Output);
+                        query.QueryCallback.Invoke(cache);
                         continue;
                     }
                 }
 
-                _connectorQueue.Enqueue(new QueueableQuery(query, callback));
+                _connectorQueue.Enqueue(query);
             }
         }
 
         /// <summary>
-        ///     Executes a list of query, ignoring any caching, queueing or multi-threading.
+        ///     Executes a list of queries, ignoring the queue and multi-threading.
         /// </summary>
         /// <param name="queries">The queries to be executed.</param>
-        /// <returns>The result of the query executed.</returns>
-        public object ExecuteQuery(params Query[] queries)
+        /// <returns>The result of the queries executed.</returns>
+        public IEnumerable<QueryOutput> ExecuteQuery(params Query[] queries)
         {
-            object result = null;
-            MySqlDataReader reader = null;
+            var result = new List<QueryOutput>();
 
-            foreach (var query in queries)
+            using (var connection = CreateConnection())
+            using (var transaction = connection.BeginTransaction())
+            using (var command = connection.CreateCommand())
             {
                 try
                 {
-                    var command = Connection.CreateCommand();
-                    command.CommandText = query.QueryString;
+                    connection.Open();
 
-                    foreach (var param in query.QueryParameters)
-                        command.Parameters.AddWithValue(param.Name, param.Value);
+                    foreach (var query in queries)
+                        try
+                        {
+                            var queryOutput = new QueryOutput(query, null);
 
-                    Connection.Open();
-                    switch (query.QueryType)
-                    {
-                        case EQueryType.NonQuery:
-                            result = command.ExecuteNonQuery();
-                            break;
-                        case EQueryType.Scalar:
-                            result = command.ExecuteScalar();
-                            break;
-                        case EQueryType.Reader:
-                            var readerResult = new List<Row>();
+                            command.CommandText = query.QueryString;
+                            command.Parameters.Clear();
 
-                            reader = command.ExecuteReader();
-                            while (reader.Read())
-                                try
-                                {
-                                    var columns = new List<Column>();
+                            foreach (var param in query.QueryParameters)
+                                command.Parameters.Add(param);
 
-                                    for (var i = 0; i < reader.FieldCount; i++)
-                                        columns.Add(new Column(reader.GetName(i), reader.GetValue(i)));
+                            switch (query.QueryType)
+                            {
+                                case EQueryType.NonQuery:
+                                    queryOutput.Output = command.ExecuteNonQuery();
+                                    break;
+                                case EQueryType.Scalar:
+                                    queryOutput.Output = command.ExecuteScalar();
+                                    break;
+                                case EQueryType.Reader:
+                                    var readerResult = new List<Row>();
 
-                                    readerResult.Add(new Row(columns));
-                                }
-                                catch (Exception ex)
-                                {
-                                    Utils.LogConsole("MySqlConnectorWrapper.Reader",
-                                        $"Query \"{query}\" threw:\n{ex.Message}");
-                                }
+                                    using (var reader = command.ExecuteReader())
+                                    {
+                                        try
+                                        {
+                                            while (reader.Read())
+                                                try
+                                                {
+                                                    var columns = new List<Column>();
 
-                            result = readerResult;
-                            break;
-                    }
+                                                    for (var i = 0; i < reader.FieldCount; i++)
+                                                        columns.Add(new Column(reader.GetName(i), reader.GetValue(i)));
+
+                                                    readerResult.Add(new Row(columns));
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    Utils.LogConsole("MySqlConnectorWrapper.Reader",
+                                                        $"[During READ] Query \"{query.QueryString}\" threw:\n{ex.Message}");
+                                                }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Utils.LogConsole("MySqlConnectorWrapper.Reader",
+                                                $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
+                                        }
+                                        finally
+                                        {
+                                            reader.Close();
+                                        }
+                                    }
+
+                                    queryOutput.Output = readerResult;
+                                    break;
+                            }
+
+                            result.Add(queryOutput);
+                            query.QueryCallback?.Invoke(queryOutput);
+                            if (Configuration.UseCache && query.ShouldCache)
+                                _cacheManager.StoreUpdateItemInCache(queryOutput);
+                        }
+                        catch (Exception ex)
+                        {
+                            Utils.LogConsole("MySqlConnectorWrapper.ExecuteQuery",
+                                $"Query \"{query}\" threw:\n{ex.Message}");
+                        }
+
+                    transaction.Commit();
                 }
                 catch (Exception ex)
                 {
-                    Utils.LogConsole("MySqlConnectorWrapper.ExecuteQuery", $"Query \"{query}\" threw:\n{ex.Message}");
+                    try
+                    {
+                        transaction.Rollback();
+                    }
+                    catch (Exception e)
+                    {
+                        Utils.LogConsole("MySqlConnectorWrapper.ExecuteQuery",
+                            $"Exception happened during transaction rollback:\n{e.Message}");
+                    }
+
+                    Utils.LogConsole("MySqlConnectorWrapper.ExecuteQuery",
+                        $"Exception happened during transaction commit:\n{ex.Message}");
                 }
                 finally
                 {
-                    reader?.Close();
-                    Connection.Close();
+                    connection.Close();
                 }
             }
 
@@ -187,16 +225,6 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         protected bool RemoveItemFromCache(Query query)
         {
             return _cacheManager.RemoveItemFromCache(query);
-        }
-
-        /// <summary>
-        ///     Stores a query output into the cache.
-        /// </summary>
-        /// <param name="query">The query that was executed.</param>
-        /// <param name="output">The output of the executed query.</param>
-        protected internal void StoreItemInCache(Query query, object output)
-        {
-            _cacheManager.StoreItemInCache(query, output);
         }
     }
 }

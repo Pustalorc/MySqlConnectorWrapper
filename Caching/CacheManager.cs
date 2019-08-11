@@ -6,22 +6,22 @@ using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
 
 namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
 {
-    public class CacheManager<T> where T : IConnectorConfiguration
+    public sealed class CacheManager<T> where T : IConnectorConfiguration
     {
-        /// <summary>
-        ///     Timer to request the database for updates on the cached items.
-        /// </summary>
-        private readonly Timer _selfUpdate;
-
-        /// <summary>
-        ///     The list of cached queries.
-        /// </summary>
-        private readonly List<Cache> _cache = new List<Cache>();
-
         /// <summary>
         ///     The instance of the connector.
         /// </summary>
         private readonly ConnectorWrapper<T> _connector;
+
+        /// <summary>
+        ///     The list of cached queries.
+        /// </summary>
+        private readonly List<QueryOutput> _cache = new List<QueryOutput>();
+
+        /// <summary>
+        ///     Timer to request the database for updates on the cached items.
+        /// </summary>
+        private readonly Timer _selfUpdate;
 
         /// <summary>
         ///     Instantiates the cache manager. Requires the instance of the connector.
@@ -49,11 +49,11 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         /// <summary>
         ///     Removes the specified item from cache.
         /// </summary>
-        /// <param name="cache">The item to remove from cache.</param>
+        /// <param name="queryOutput">The item to remove from cache.</param>
         /// <returns>If it successfully removed the item from the cache.</returns>
-        private bool RemoveItemFromCache(Cache cache)
+        private bool RemoveItemFromCache(QueryOutput queryOutput)
         {
-            return _cache.Remove(cache);
+            return _cache.Remove(queryOutput);
         }
 
         /// <summary>
@@ -61,28 +61,26 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         /// </summary>
         /// <param name="query">The query related to the item in cache to be retrieved.</param>
         /// <returns>The cache item if it is found or null otherwise.</returns>
-        public Cache GetItemInCache(Query query)
+        public QueryOutput GetItemInCache(Query query)
         {
-            return _cache.FirstOrDefault(k => k.Query == query);
+            return _cache.Find(k => k.Query == query);
         }
 
         /// <summary>
         ///     Stores a new item in cache with the input query and output.
         /// </summary>
-        /// <param name="query">The query that was executed.</param>
-        /// <param name="output">The output of said query.</param>
-        public void StoreItemInCache(Query query, object output)
+        /// <param name="queryOutput">The output of said query.</param>
+        public void StoreUpdateItemInCache(QueryOutput queryOutput)
         {
-            var cache = GetItemInCache(query);
-            if (cache != null) return;
+            var cache = GetItemInCache(queryOutput.Query);
+            if (cache != null) cache.Output = queryOutput.Output;
 
-            var item = new Cache(query, output);
-            _cache.Add(item);
+            _cache.Add(queryOutput);
         }
 
         private void UpdateCacheItems(object sender, ElapsedEventArgs e)
         {
-            foreach (var c in _cache) c.Output = _connector.ExecuteQuery(c.Query);
+            _connector.ExecuteQuery(_cache.Select(k => k.Query).ToArray());
         }
     }
 }

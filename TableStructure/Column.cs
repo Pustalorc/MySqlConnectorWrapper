@@ -8,12 +8,12 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.TableStructure
         /// <summary>
         ///     The name of the column in question.
         /// </summary>
-        public string Name;
+        public readonly string Name;
 
         /// <summary>
         ///     The value (if any) of this column for the first or the defined row.
         /// </summary>
-        public object Value;
+        public readonly object Value;
 
         public Column(string name, object value)
         {

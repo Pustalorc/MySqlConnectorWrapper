@@ -1,6 +1,7 @@
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Timers;
 using Pustalorc.Libraries.MySqlConnectorWrapper.Configuration;
+using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
 
 namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
 {
@@ -18,12 +19,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
         /// <summary>
         ///     The actual queue for queries.
         /// </summary>
-        private readonly Queue<QueueableQuery> _queue = new Queue<QueueableQuery>();
-
-        /// <summary>
-        ///     The object to be locked before accessing the queue.
-        /// </summary>
-        private readonly object _queueLock = new object();
+        private readonly ConcurrentQueue<Query> _queue = new ConcurrentQueue<Query>();
 
         /// <summary>
         ///     The timer to tick every 125ms to process the queue.
@@ -46,31 +42,16 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
         ///     Enqueues a new QueueableQuery.
         /// </summary>
         /// <param name="item">The query to be enqueued for execution.</param>
-        public void Enqueue(QueueableQuery item)
+        public void Enqueue(Query item)
         {
-            lock (_queueLock)
-            {
-                _queue.Enqueue(item);
-            }
+            _queue.Enqueue(item);
         }
 
         private void ProcessQueue(object sender, ElapsedEventArgs e)
         {
-            QueueableQuery item;
+            if (_queue.Count <= 0 || !_queue.TryDequeue(out var item)) return;
 
-            lock (_queueLock)
-            {
-                if (_queue.Count <= 0)
-                    return;
-
-                item = _queue.Dequeue();
-            }
-
-            var output = _connector.ExecuteQuery(item.Query);
-
-            if (item.Query.ShouldCache) _connector.StoreItemInCache(item.Query, output);
-
-            item.QueryCallback?.Invoke(item.Query, output);
+            _connector.ExecuteQuery(item);
         }
     }
 }
