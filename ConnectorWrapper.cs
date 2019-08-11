@@ -224,7 +224,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         /// <returns>If it successfully removed the item from the cache.</returns>
         protected bool RemoveItemFromCache(Query query)
         {
-            return _cacheManager.RemoveItemFromCache(query);
+            return Configuration.UseCache && _cacheManager.RemoveItemFromCache(query);
         }
     }
 }
