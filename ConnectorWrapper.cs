@@ -87,8 +87,9 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         /// <summary>
         ///     Requests to execute a list of queries.
         /// </summary>
+        /// <param name="isTransaction">Defines if the queries should be executed within the same MySql Transaction</param>
         /// <param name="queries">The queries to be executed.</param>
-        public void RequestQueryExecute(params Query[] queries)
+        public void RequestQueryExecute(bool isTransaction, params Query[] queries)
         {
             foreach (var query in queries)
             {
@@ -102,8 +103,11 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                     }
                 }
 
-                _connectorQueue.Enqueue(query);
+                if (!isTransaction) _connectorQueue.Enqueue(query);
             }
+
+            if (isTransaction)
+                _connectorQueue.EnqueueTransaction(queries);
         }
 
         /// <summary>

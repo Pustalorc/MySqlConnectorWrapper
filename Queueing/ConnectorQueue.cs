@@ -19,7 +19,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
         /// <summary>
         ///     The actual queue for queries.
         /// </summary>
-        private readonly ConcurrentQueue<Query> _queue = new ConcurrentQueue<Query>();
+        private readonly ConcurrentQueue<Query[]> _queue = new ConcurrentQueue<Query[]>();
 
         /// <summary>
         ///     The timer to tick every 125ms to process the queue.
@@ -39,12 +39,21 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
         }
 
         /// <summary>
-        ///     Enqueues a new QueueableQuery.
+        ///     Enqueues a new Query.
         /// </summary>
         /// <param name="item">The query to be enqueued for execution.</param>
         public void Enqueue(Query item)
         {
-            _queue.Enqueue(item);
+            _queue.Enqueue(new[] {item});
+        }
+
+        /// <summary>
+        ///     Enqueues a collection of queries to be executed simultaneously.
+        /// </summary>
+        /// <param name="queries">The collection of queries.</param>
+        public void EnqueueTransaction(Query[] queries)
+        {
+            _queue.Enqueue(queries);
         }
 
         private void ProcessQueue(object sender, ElapsedEventArgs e)
