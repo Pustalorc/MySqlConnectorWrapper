@@ -189,7 +189,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                             catch (Exception ex)
                             {
                                 Utils.LogConsole("MySqlConnectorWrapper.ExecuteQuery",
-                                    $"Query \"{query}\" threw:\n{ex.Message}");
+                                    $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
                             }
 
                         transaction.Commit();
