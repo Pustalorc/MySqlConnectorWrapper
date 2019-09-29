@@ -160,7 +160,8 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                                                         var columns = new List<Column>();
 
                                                         for (var i = 0; i < reader.FieldCount; i++)
-                                                            columns.Add(new Column(reader.GetName(i), reader.GetValue(i)));
+                                                            columns.Add(new Column(reader.GetName(i),
+                                                                reader.GetValue(i)));
 
                                                         readerResult.Add(new Row(columns));
                                                     }
