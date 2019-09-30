@@ -13,7 +13,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
     ///     The connector. Inherit it and pass a configuration class to it.
     /// </summary>
     /// <typeparam name="T">The type, which inherits from IConnectorConfiguration, which should be used by the connector.</typeparam>
-    public abstract class ConnectorWrapper<T> where T : IConnectorConfiguration
+    public abstract class ConnectorWrapper<T> : IDisposable where T : IConnectorConfiguration
     {
         /// <summary>
         ///     The queue that the connector should use.
@@ -232,6 +232,17 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         protected bool RemoveItemFromCache(Query query)
         {
             return Configuration.UseCache && _cacheManager.RemoveItemFromCache(query);
+        }
+
+        protected void UpdateCacheRefreshTime(double time)
+        {
+            _cacheManager.UpdateCacheRefreshTime(time);
+        }
+
+        public void Dispose()
+        {
+            _cacheManager.Dispose();
+            _connectorQueue.Dispose();
         }
     }
 }

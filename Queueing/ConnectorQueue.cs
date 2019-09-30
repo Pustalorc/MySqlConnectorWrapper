@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Timers;
 using Pustalorc.Libraries.MySqlConnectorWrapper.Configuration;
@@ -9,7 +10,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
     ///     The queue for the connector. Automatically instantiated when the connector is instantiated.
     /// </summary>
     /// <typeparam name="T">The configuration type passed on to the connector.</typeparam>
-    public sealed class ConnectorQueue<T> where T : IConnectorConfiguration
+    public sealed class ConnectorQueue<T> : IDisposable where T : IConnectorConfiguration
     {
         /// <summary>
         ///     The instance of the connector.
@@ -24,7 +25,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
         /// <summary>
         ///     The timer to tick every 125ms to process the queue.
         /// </summary>
-        private readonly Timer _tick = new Timer(125);
+        private readonly Timer _tick = new Timer(500);
 
         /// <summary>
         ///     Instantiates the connector queue. Requires the instance of the connector.
@@ -61,6 +62,18 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
             if (_queue.Count <= 0 || !_queue.TryDequeue(out var item)) return;
 
             _connector.ExecuteQuery(item);
+        }
+
+        public void Dispose()
+        {
+            _tick?.Dispose();
+
+            while (true)
+            {
+                if (_queue.Count <= 0 || !_queue.TryDequeue(out var item)) return;
+
+                _connector.ExecuteQuery(item);
+            }
         }
     }
 }

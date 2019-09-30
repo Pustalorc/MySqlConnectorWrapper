@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Timers;
@@ -6,7 +7,7 @@ using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
 
 namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
 {
-    public sealed class CacheManager<T> where T : IConnectorConfiguration
+    public sealed class CacheManager<T> : IDisposable where T : IConnectorConfiguration
     {
         /// <summary>
         ///     The instance of the connector.
@@ -63,7 +64,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         /// <returns>The cache item if it is found or null otherwise.</returns>
         public QueryOutput GetItemInCache(Query query)
         {
-            return _cache.Find(k => k.Query == query);
+            return _cache.FirstOrDefault(k => k.Query.QueryString.Equals(query.QueryString, StringComparison.InvariantCultureIgnoreCase));
         }
 
         /// <summary>
@@ -74,13 +75,25 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         {
             var cache = GetItemInCache(queryOutput.Query);
             if (cache != null) cache.Output = queryOutput.Output;
-
-            _cache.Add(queryOutput);
+            else _cache.Add(queryOutput);
         }
 
         private void UpdateCacheItems(object sender, ElapsedEventArgs e)
         {
             _connector.ExecuteQuery(_cache.Select(k => k.Query).ToArray());
+        }
+
+        public void UpdateCacheRefreshTime(double time)
+        {
+            _selfUpdate.Stop();
+            _selfUpdate.Interval = time;
+            _selfUpdate.Start();
+        }
+
+        public void Dispose()
+        {
+            _selfUpdate?.Dispose();
+            _cache.Clear();
         }
     }
 }
