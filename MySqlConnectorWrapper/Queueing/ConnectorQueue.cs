@@ -61,7 +61,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
         {
             if (_queue.Count <= 0 || !_queue.TryDequeue(out var item)) return;
 
-            _connector.ExecuteQuery(item);
+            _connector.ExecuteTransaction(item);
         }
 
         public void Dispose()
@@ -72,7 +72,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
             {
                 if (_queue.Count <= 0 || !_queue.TryDequeue(out var item)) return;
 
-                _connector.ExecuteQuery(item);
+                _connector.ExecuteTransaction(item);
             }
         }
     }

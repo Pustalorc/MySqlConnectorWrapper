@@ -64,7 +64,8 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         /// <returns>The cache item if it is found or null otherwise.</returns>
         public QueryOutput GetItemInCache(Query query)
         {
-            return _cache.FirstOrDefault(k => k.Query.QueryString.Equals(query.QueryString, StringComparison.InvariantCultureIgnoreCase));
+            return _cache.FirstOrDefault(k =>
+                k.Query.QueryString.Equals(query.QueryString, StringComparison.InvariantCultureIgnoreCase));
         }
 
         /// <summary>
@@ -80,9 +81,13 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
 
         private void UpdateCacheItems(object sender, ElapsedEventArgs e)
         {
-            _connector.ExecuteQuery(_cache.Select(k => k.Query).ToArray());
+            _connector.ExecuteTransaction(_cache.Select(k => k.Query).ToArray());
         }
 
+        /// <summary>
+        ///     Updates the cache's timer with a new interval.
+        /// </summary>
+        /// <param name="time">The new interval (in ms).</param>
         public void UpdateCacheRefreshTime(double time)
         {
             _selfUpdate.Stop();
