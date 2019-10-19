@@ -25,7 +25,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
         /// <summary>
         ///     The timer to tick every 125ms to process the queue.
         /// </summary>
-        private readonly Timer _tick = new Timer(500);
+        private readonly Timer _tick = new Timer(125);
 
         /// <summary>
         ///     Instantiates the connector queue. Requires the instance of the connector.
