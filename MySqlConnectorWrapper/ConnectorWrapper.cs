@@ -254,7 +254,15 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                         break;
                 }
 
-                query.QueryCallback?.Invoke(queryOutput);
+                try
+                {
+                    query.QueryCallback?.Invoke(queryOutput);
+                }
+                catch (Exception ex)
+                {
+                    Utils.LogConsole("MySqlConnectorWrapper.QueryCallback", $"Query \"{query.QueryString}\" threw during callback:\n{ex.Message}");
+                }
+
                 if (Configuration.UseCache && query.ShouldCache)
                     _cacheManager.StoreUpdateItemInCache(queryOutput);
             }
