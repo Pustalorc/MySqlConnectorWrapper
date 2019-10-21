@@ -10,14 +10,14 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
     public sealed class CacheManager<T> : IDisposable where T : IConnectorConfiguration
     {
         /// <summary>
-        ///     The instance of the connector.
-        /// </summary>
-        private readonly ConnectorWrapper<T> _connector;
-
-        /// <summary>
         ///     The list of cached queries.
         /// </summary>
         private readonly List<QueryOutput> _cache = new List<QueryOutput>();
+
+        /// <summary>
+        ///     The instance of the connector.
+        /// </summary>
+        private readonly ConnectorWrapper<T> _connector;
 
         /// <summary>
         ///     Timer to request the database for updates on the cached items.
@@ -35,6 +35,12 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
             _selfUpdate = new Timer(connector.Configuration.CacheRefreshIntervalMilliseconds);
             _selfUpdate.Elapsed += UpdateCacheItems;
             _selfUpdate.Start();
+        }
+
+        public void Dispose()
+        {
+            _selfUpdate?.Dispose();
+            _cache.Clear();
         }
 
         /// <summary>
@@ -93,12 +99,6 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
             _selfUpdate.Stop();
             _selfUpdate.Interval = time;
             _selfUpdate.Start();
-        }
-
-        public void Dispose()
-        {
-            _selfUpdate?.Dispose();
-            _cache.Clear();
         }
     }
 }

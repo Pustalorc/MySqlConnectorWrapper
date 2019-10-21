@@ -10,6 +10,16 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
     public sealed class Query
     {
         /// <summary>
+        ///     The callback for when execution of this query is finished.
+        /// </summary>
+        public readonly QueryCallback QueryCallback;
+
+        /// <summary>
+        ///     The parameters to be added to the command prior to execution.
+        /// </summary>
+        public readonly List<MySqlParameter> QueryParameters;
+
+        /// <summary>
         ///     The string of the query that gets executed in MySql.
         /// </summary>
         public readonly string QueryString;
@@ -20,19 +30,9 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
         public readonly EQueryType QueryType;
 
         /// <summary>
-        ///     The callback for when execution of this query is finished.
-        /// </summary>
-        public readonly QueryCallback QueryCallback;
-
-        /// <summary>
         ///     Determines whether the query should be cached or not (only affected if caching is enabled).
         /// </summary>
         public readonly bool ShouldCache;
-
-        /// <summary>
-        ///     The parameters to be added to the command prior to execution.
-        /// </summary>
-        public readonly List<MySqlParameter> QueryParameters;
 
         /// <summary>
         ///     Constructor for the query.

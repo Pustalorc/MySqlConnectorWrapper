@@ -13,6 +13,11 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.TableStructure
         /// </summary>
         private readonly List<Column> _columns;
 
+        public Row(IEnumerable<Column> columns)
+        {
+            _columns = columns.ToList();
+        }
+
         /// <summary>
         ///     Retrieves a value based on the column name.
         /// </summary>
@@ -24,10 +29,5 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.TableStructure
         /// </summary>
         /// <param name="index">The index of the column to retrieve the value of.</param>
         public Column this[int index] => _columns.Count < index ? null : _columns[index];
-
-        public Row(IEnumerable<Column> columns)
-        {
-            _columns = columns.ToList();
-        }
     }
 }

@@ -7,7 +7,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Tests
     [TestClass]
     public class ConnectorWrapperTests
     {
-        private Database _database = new Database();
+        private readonly Database _database = new Database();
 
         [TestMethod]
         public void ExecuteQueryTest()

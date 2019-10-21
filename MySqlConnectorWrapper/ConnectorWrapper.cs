@@ -17,14 +17,14 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
     public abstract class ConnectorWrapper<T> : IDisposable where T : IConnectorConfiguration
     {
         /// <summary>
-        ///     The queue that the connector should use.
-        /// </summary>
-        private readonly ConnectorQueue<T> _connectorQueue;
-
-        /// <summary>
         ///     The caching system that the connector should use.
         /// </summary>
         private readonly CacheManager<T> _cacheManager;
+
+        /// <summary>
+        ///     The queue that the connector should use.
+        /// </summary>
+        private readonly ConnectorQueue<T> _connectorQueue;
 
         /// <summary>
         ///     The original unmodified passed configuration to the class.
@@ -62,6 +62,12 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                     connection.Close();
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            _cacheManager.Dispose();
+            _connectorQueue.Dispose();
         }
 
         /// <summary>
@@ -260,7 +266,8 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                 }
                 catch (Exception ex)
                 {
-                    Utils.LogConsole("MySqlConnectorWrapper.QueryCallback", $"Query \"{query.QueryString}\" threw during callback:\n{ex.Message}");
+                    Utils.LogConsole("MySqlConnectorWrapper.QueryCallback",
+                        $"Query \"{query.QueryString}\" threw during callback:\n{ex.Message}");
                 }
 
                 if (Configuration.UseCache && query.ShouldCache)
@@ -295,12 +302,6 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
             if (!Configuration.UseCache) return;
 
             _cacheManager.UpdateCacheRefreshTime(rate);
-        }
-
-        public void Dispose()
-        {
-            _cacheManager.Dispose();
-            _connectorQueue.Dispose();
         }
     }
 }

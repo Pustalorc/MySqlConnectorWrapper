@@ -39,6 +39,18 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
             _tick.Start();
         }
 
+        public void Dispose()
+        {
+            _tick?.Dispose();
+
+            while (true)
+            {
+                if (_queue.Count <= 0 || !_queue.TryDequeue(out var item)) return;
+
+                _connector.ExecuteTransaction(item);
+            }
+        }
+
         /// <summary>
         ///     Enqueues a new Query.
         /// </summary>
@@ -62,18 +74,6 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
             if (_queue.Count <= 0 || !_queue.TryDequeue(out var item)) return;
 
             _connector.ExecuteTransaction(item);
-        }
-
-        public void Dispose()
-        {
-            _tick?.Dispose();
-
-            while (true)
-            {
-                if (_queue.Count <= 0 || !_queue.TryDequeue(out var item)) return;
-
-                _connector.ExecuteTransaction(item);
-            }
         }
     }
 }
