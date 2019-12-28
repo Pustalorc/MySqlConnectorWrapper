@@ -10,6 +10,7 @@ using Pustalorc.Libraries.MySqlConnectorWrapper.TableStructure;
 
 namespace Pustalorc.Libraries.MySqlConnectorWrapper
 {
+    /// <inheritdoc />
     /// <summary>
     ///     The connector. Inherit it and pass a configuration class to it.
     /// </summary>
@@ -44,23 +45,21 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
 
             _connectorQueue = new ConnectorQueue<T>(this);
 
-            using (var connection = CreateConnection())
+            using var connection = CreateConnection();
+            try
             {
-                try
-                {
-                    connection.Open();
-                }
-                catch (MySqlException ex)
-                {
-                    Utils.LogConsole("MySqlConnectorWrapper.Constructor",
-                        ex.Number == 1042 ? "Can't connect to MySQL host." : ex.Message);
+                connection.Open();
+            }
+            catch (MySqlException ex)
+            {
+                Utils.LogConsole("MySqlConnectorWrapper.Constructor",
+                    ex.Number == 1042 ? "Can't connect to MySQL host." : ex.Message);
 
-                    throw;
-                }
-                finally
-                {
-                    connection.Close();
-                }
+                throw;
+            }
+            finally
+            {
+                connection.Close();
             }
         }
 
@@ -128,21 +127,19 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
             {
                 connection.Open();
 
-                using (var command = connection.CreateCommand())
+                using var command = connection.CreateCommand();
+                try
                 {
-                    try
-                    {
-                        return RunCommand(query, command);
-                    }
-                    catch (Exception ex)
-                    {
-                        Utils.LogConsole("MySqlConnectorWrapper.ExecuteQuery",
-                            $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
-                    }
-                    finally
-                    {
-                        connection.Close();
-                    }
+                    return RunCommand(query, command);
+                }
+                catch (Exception ex)
+                {
+                    Utils.LogConsole("MySqlConnectorWrapper.ExecuteQuery",
+                        $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
+                }
+                finally
+                {
+                    connection.Close();
                 }
             }
 
@@ -162,33 +159,31 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
             {
                 connection.Open();
 
-                using (var transaction = connection.BeginTransaction())
-                using (var command = connection.CreateCommand())
+                using var transaction = connection.BeginTransaction();
+                using var command = connection.CreateCommand();
+                try
+                {
+                    result.AddRange(queries.Select(query => RunCommand(query, command)));
+                    transaction.Commit();
+                }
+                catch (Exception ex)
                 {
                     try
                     {
-                        result.AddRange(queries.Select(query => RunCommand(query, command)));
-                        transaction.Commit();
+                        transaction.Rollback();
                     }
-                    catch (Exception ex)
+                    catch (Exception e)
                     {
-                        try
-                        {
-                            transaction.Rollback();
-                        }
-                        catch (Exception e)
-                        {
-                            Utils.LogConsole("MySqlConnectorWrapper.ExecuteTransaction",
-                                $"Exception happened during rollback:\n{e.Message}");
-                        }
-
                         Utils.LogConsole("MySqlConnectorWrapper.ExecuteTransaction",
-                            $"Exception happened during commit:\n{ex.Message}");
+                            $"Exception happened during rollback:\n{e.Message}");
                     }
-                    finally
-                    {
-                        connection.Close();
-                    }
+
+                    Utils.LogConsole("MySqlConnectorWrapper.ExecuteTransaction",
+                        $"Exception happened during commit:\n{ex.Message}");
+                }
+                finally
+                {
+                    connection.Close();
                 }
             }
 

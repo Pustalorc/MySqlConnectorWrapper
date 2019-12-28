@@ -71,7 +71,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         public QueryOutput GetItemInCache(Query query)
         {
             return _cache.FirstOrDefault(k =>
-                k.Query.QueryString.Equals(query.QueryString, StringComparison.InvariantCultureIgnoreCase));
+                k.Query.QueryString.Equals(query.QueryString, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>

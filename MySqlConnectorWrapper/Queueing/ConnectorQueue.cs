@@ -6,6 +6,7 @@ using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
 
 namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queueing
 {
+    /// <inheritdoc />
     /// <summary>
     ///     The queue for the connector. Automatically instantiated when the connector is instantiated.
     /// </summary>

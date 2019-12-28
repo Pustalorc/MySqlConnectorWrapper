@@ -35,7 +35,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
 
             if (!input.Contains("\"")) return $"\"{input}\"";
 
-            return input.StartsWith("\"", StringComparison.InvariantCulture)
+            return input.StartsWith("\"", StringComparison.Ordinal)
                 ? $"'{RepeatChar(input, '\'')}'"
                 : $"\"{RepeatChar(input, '\"')}\"";
         }

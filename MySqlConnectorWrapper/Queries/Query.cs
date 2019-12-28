@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using MySql.Data.MySqlClient;
 
 namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
@@ -17,7 +16,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
         /// <summary>
         ///     The parameters to be added to the command prior to execution.
         /// </summary>
-        public readonly List<MySqlParameter> QueryParameters;
+        public readonly IEnumerable<MySqlParameter> QueryParameters;
 
         /// <summary>
         ///     The string of the query that gets executed in MySql.
@@ -49,7 +48,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
             QueryType = type;
             QueryCallback = callback;
             ShouldCache = shouldCache;
-            QueryParameters = queryParameters.ToList();
+            QueryParameters = queryParameters;
         }
     }
 }
