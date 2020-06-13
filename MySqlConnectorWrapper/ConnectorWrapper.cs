@@ -155,36 +155,34 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         {
             var result = new List<QueryOutput>();
 
-            using (var connection = CreateConnection())
-            {
-                connection.Open();
+            using var connection = CreateConnection();
+            connection.Open();
 
-                using var transaction = connection.BeginTransaction();
-                using var command = connection.CreateCommand();
+            using var transaction = connection.BeginTransaction();
+            using var command = connection.CreateCommand();
+            try
+            {
+                result.AddRange(queries.Select(query => RunCommand(query, command)));
+                transaction.Commit();
+            }
+            catch (Exception ex)
+            {
                 try
                 {
-                    result.AddRange(queries.Select(query => RunCommand(query, command)));
-                    transaction.Commit();
+                    transaction.Rollback();
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
-                    try
-                    {
-                        transaction.Rollback();
-                    }
-                    catch (Exception e)
-                    {
-                        Utils.LogConsole("MySqlConnectorWrapper.ExecuteTransaction",
-                            $"Exception happened during rollback:\n{e.Message}");
-                    }
-
                     Utils.LogConsole("MySqlConnectorWrapper.ExecuteTransaction",
-                        $"Exception happened during commit:\n{ex.Message}");
+                        $"Exception happened during rollback:\n{e.Message}");
                 }
-                finally
-                {
-                    connection.Close();
-                }
+
+                Utils.LogConsole("MySqlConnectorWrapper.ExecuteTransaction",
+                    $"Exception happened during commit:\n{ex.Message}");
+            }
+            finally
+            {
+                connection.Close();
             }
 
             return result;

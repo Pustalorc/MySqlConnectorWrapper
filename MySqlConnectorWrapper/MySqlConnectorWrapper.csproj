@@ -83,6 +83,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Caching\CachedQuery.cs" />
     <Compile Include="Caching\CacheManager.cs" />
     <Compile Include="Configuration\DefaultConnectorConfiguration.cs" />
     <Compile Include="Configuration\IConnectorConfiguration.cs" />
