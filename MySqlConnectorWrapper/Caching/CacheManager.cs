@@ -6,15 +6,6 @@ using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
 
 namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
 {
-    public class CachedQuery : QueryOutput
-    {
-        public int AccessCount;
-
-        public CachedQuery(QueryOutput query) : base(query.Query, query.Output)
-        {
-        }
-    }
-
     public sealed class CacheManager<T> : IDisposable where T : IConnectorConfiguration
     {
         /// <summary>
@@ -60,7 +51,16 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         /// <returns>The cache item if it is found or null otherwise.</returns>
         public QueryOutput GetItemInCache(Query query)
         {
-            return _cache.FirstOrDefault(k => k != null && k.Query.QueryString.Equals(query.QueryString, StringComparison.OrdinalIgnoreCase));
+            var cachedQuery = _cache.FirstOrDefault(k =>
+                k?.Query.QueryString.Equals(query.QueryString, StringComparison.OrdinalIgnoreCase) == true);
+
+            if (cachedQuery == null)
+                return null;
+
+            cachedQuery.AccessCount++;
+            cachedQuery.LastAccess = DateTime.Now;
+
+            return cachedQuery;
         }
 
         /// <summary>
@@ -69,9 +69,11 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         /// <param name="queryOutput">The output of said query.</param>
         public void StoreUpdateItemInCache(QueryOutput queryOutput)
         {
-            var cache = GetItemInCache(queryOutput.Query);
-            if (cache != null) cache.Output = queryOutput.Output;
-            else _cache[GetBestCacheIndex()] = new CachedQuery(queryOutput);
+            var cache = (CachedQuery) GetItemInCache(queryOutput.Query);
+            if (cache != null)
+                cache.Output = queryOutput.Output;
+            else
+                _cache[GetBestCacheIndex()] = new CachedQuery(queryOutput);
         }
 
         private int GetBestCacheIndex()
@@ -80,12 +82,9 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
             if (index > -1)
                 return index;
 
-            index = _cache.IndexOfLeastUse();
+            var first = _cache.Where(k => k != null).OrderByDescending(k => k.Weight).FirstOrDefault();
 
-            if (index > -1)
-                return index;
-
-            throw new Exception("No valid index was found, cannot use -1");
+            return first == null ? _cache.FindFirstIndexNull() : _cache.FindFirstIndex(k => k?.Query.QueryString.Equals(first.Query.QueryString, StringComparison.OrdinalIgnoreCase) == true);
         }
 
         private void UpdateCacheItems(object sender, ElapsedEventArgs e)
