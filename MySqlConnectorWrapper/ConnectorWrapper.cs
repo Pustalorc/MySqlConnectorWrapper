@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using Pustalorc.Libraries.MySqlConnectorWrapper.Caching;
 using Pustalorc.Libraries.MySqlConnectorWrapper.Configuration;
@@ -117,12 +118,62 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         }
 
         /// <summary>
+        ///     Executes a single query asynchronously. If called directly from inherited class, it ignores queueing.
+        /// </summary>
+        /// <param name="query">The query to be executed.</param>
+        /// <returns>The result of the query executed.</returns>
+        public async Task<QueryOutput> ExecuteQueryAsync(Query query)
+        {
+            if (Configuration.UseCache && query.ShouldCache)
+            {
+                var cache = _cacheManager.GetItemInCache(query);
+                if (cache != null)
+                {
+                    query.QueryCallback.Invoke(cache);
+                    return cache;
+                }
+            }
+
+            using (var connection = CreateConnection())
+            {
+                connection.Open();
+
+                using var command = connection.CreateCommand();
+                try
+                {
+                    return await RunCommandAsync(query, command);
+                }
+                catch (Exception ex)
+                {
+                    Utils.LogConsole("MySqlConnectorWrapper.ExecuteQuery",
+                        $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
+                }
+                finally
+                {
+                    connection.Close();
+                }
+            }
+
+            return new QueryOutput(query, null);
+        }
+
+        /// <summary>
         ///     Executes a single query. If called directly from inherited class, it ignores queueing.
         /// </summary>
         /// <param name="query">The query to be executed.</param>
         /// <returns>The result of the query executed.</returns>
         public QueryOutput ExecuteQuery(Query query)
         {
+            if (Configuration.UseCache && query.ShouldCache)
+            {
+                var cache = _cacheManager.GetItemInCache(query);
+                if (cache != null)
+                {
+                    query.QueryCallback.Invoke(cache);
+                    return cache;
+                }
+            }
+
             using (var connection = CreateConnection())
             {
                 connection.Open();
@@ -220,6 +271,95 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                         var readerResult = new List<Row>();
 
                         using (var reader = command.ExecuteReader())
+                        {
+                            try
+                            {
+                                while (reader.Read())
+                                    try
+                                    {
+                                        var columns = new List<Column>();
+
+                                        for (var i = 0; i < reader.FieldCount; i++)
+                                            columns.Add(new Column(reader.GetName(i),
+                                                reader.GetValue(i)));
+
+                                        readerResult.Add(new Row(columns));
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Utils.LogConsole("MySqlConnectorWrapper.Reader",
+                                            $"[During READ] Query \"{query.QueryString}\" threw:\n{ex.Message}");
+                                    }
+                            }
+                            catch (Exception ex)
+                            {
+                                Utils.LogConsole("MySqlConnectorWrapper.Reader",
+                                    $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
+                            }
+                            finally
+                            {
+                                reader.Close();
+                            }
+                        }
+
+                        queryOutput.Output = readerResult;
+                        break;
+                }
+
+                try
+                {
+                    query.QueryCallback?.Invoke(queryOutput);
+                }
+                catch (Exception ex)
+                {
+                    Utils.LogConsole("MySqlConnectorWrapper.QueryCallback",
+                        $"Query \"{query.QueryString}\" threw during callback:\n{ex.Message}");
+                }
+
+                if (Configuration.UseCache && query.ShouldCache)
+                    _cacheManager.StoreUpdateItemInCache(queryOutput);
+            }
+            catch (Exception ex)
+            {
+                Utils.LogConsole("MySqlConnectorWrapper.RunCommand",
+                    $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
+            }
+
+            return queryOutput;
+        }
+
+        /// <summary>
+        ///     Runs the selected query in the context of the specified Command asynchronously.
+        /// </summary>
+        /// <param name="query">The query to be ran.</param>
+        /// <param name="command">The command context to be used.</param>
+        /// <returns>The output after the query gets executed.</returns>
+        private async Task<QueryOutput> RunCommandAsync(Query query, MySqlCommand command)
+        {
+            var queryOutput = new QueryOutput(query, null);
+
+            try
+            {
+#pragma warning disable CA2100 // The SQL Query passed is assumed to be safe with no user-input badly parsed in.
+                command.CommandText = query.QueryString;
+#pragma warning restore CA2100 // The SQL Query passed is assumed to be safe with no user-input badly parsed in.
+                command.Parameters.Clear();
+
+                foreach (var param in query.QueryParameters)
+                    command.Parameters.Add(param);
+
+                switch (query.QueryType)
+                {
+                    case EQueryType.NonQuery:
+                        queryOutput.Output = await command.ExecuteNonQueryAsync();
+                        break;
+                    case EQueryType.Scalar:
+                        queryOutput.Output = await command.ExecuteScalarAsync();
+                        break;
+                    case EQueryType.Reader:
+                        var readerResult = new List<Row>();
+
+                        using (var reader = await command.ExecuteReaderAsync())
                         {
                             try
                             {
