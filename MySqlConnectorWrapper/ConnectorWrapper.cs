@@ -129,7 +129,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                 var cache = _cacheManager.GetItemInCache(query);
                 if (cache != null)
                 {
-                    query.QueryCallback.Invoke(cache);
+                    query.QueryCallback?.Invoke(cache);
                     return cache;
                 }
             }
@@ -169,7 +169,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                 var cache = _cacheManager.GetItemInCache(query);
                 if (cache != null)
                 {
-                    query.QueryCallback.Invoke(cache);
+                    query.QueryCallback?.Invoke(cache);
                     return cache;
                 }
             }
