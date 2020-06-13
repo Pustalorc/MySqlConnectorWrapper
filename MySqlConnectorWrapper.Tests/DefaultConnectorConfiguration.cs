@@ -11,5 +11,6 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Tests
         public string DatabaseName => "database";
         public bool UseCache => true;
         public ulong CacheRefreshIntervalMilliseconds => 1250;
+        public byte CacheSize => 15;
     }
 }

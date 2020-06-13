@@ -39,5 +39,10 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Configuration
         ///     Determines how long each cache object should wait before retrieving information from the database about itself.
         /// </summary>
         ulong CacheRefreshIntervalMilliseconds { get; }
+
+        /// <summary>
+        ///     The set size that the cache should use. It will not store any more queries if the cache is filled with them.
+        /// </summary>
+        byte CacheSize { get; }
     }
 }

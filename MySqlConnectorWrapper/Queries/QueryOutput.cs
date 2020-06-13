@@ -3,7 +3,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
     /// <summary>
     ///     Stores the result from an executed query.
     /// </summary>
-    public sealed class QueryOutput
+    public class QueryOutput
     {
         /// <summary>
         ///     The query that was executed and is related to the output.

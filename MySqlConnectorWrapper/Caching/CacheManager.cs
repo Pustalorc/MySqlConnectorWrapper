@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Timers;
 using Pustalorc.Libraries.MySqlConnectorWrapper.Configuration;
@@ -7,12 +6,21 @@ using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
 
 namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
 {
+    public class CachedQuery : QueryOutput
+    {
+        public int AccessCount;
+
+        public CachedQuery(QueryOutput query) : base(query.Query, query.Output)
+        {
+        }
+    }
+
     public sealed class CacheManager<T> : IDisposable where T : IConnectorConfiguration
     {
         /// <summary>
-        ///     The list of cached queries.
+        ///     The array of cached queries.
         /// </summary>
-        private readonly List<QueryOutput> _cache = new List<QueryOutput>();
+        private readonly CachedQuery[] _cache;
 
         /// <summary>
         ///     The instance of the connector.
@@ -32,6 +40,8 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         {
             _connector = connector;
 
+            _cache = new CachedQuery[connector.Configuration.CacheSize];
+
             _selfUpdate = new Timer(connector.Configuration.CacheRefreshIntervalMilliseconds);
             _selfUpdate.Elapsed += UpdateCacheItems;
             _selfUpdate.Start();
@@ -40,27 +50,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         public void Dispose()
         {
             _selfUpdate?.Dispose();
-            _cache.Clear();
-        }
-
-        /// <summary>
-        ///     Removes a specific item from the cache, based on the query input.
-        /// </summary>
-        /// <param name="query">The query related to the item in cache to be removed.</param>
-        /// <returns>If it successfully removed the item from the cache.</returns>
-        public bool RemoveItemFromCache(Query query)
-        {
-            return RemoveItemFromCache(GetItemInCache(query));
-        }
-
-        /// <summary>
-        ///     Removes the specified item from cache.
-        /// </summary>
-        /// <param name="queryOutput">The item to remove from cache.</param>
-        /// <returns>If it successfully removed the item from the cache.</returns>
-        private bool RemoveItemFromCache(QueryOutput queryOutput)
-        {
-            return _cache.Remove(queryOutput);
+            Array.Clear(_cache, 0, _cache.Length);
         }
 
         /// <summary>
@@ -70,8 +60,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         /// <returns>The cache item if it is found or null otherwise.</returns>
         public QueryOutput GetItemInCache(Query query)
         {
-            return _cache.FirstOrDefault(k =>
-                k.Query.QueryString.Equals(query.QueryString, StringComparison.OrdinalIgnoreCase));
+            return _cache.FirstOrDefault(k => k != null && k.Query.QueryString.Equals(query.QueryString, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -82,7 +71,21 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         {
             var cache = GetItemInCache(queryOutput.Query);
             if (cache != null) cache.Output = queryOutput.Output;
-            else _cache.Add(queryOutput);
+            else _cache[GetBestCacheIndex()] = new CachedQuery(queryOutput);
+        }
+
+        private int GetBestCacheIndex()
+        {
+            var index = _cache.FindFirstIndexNull();
+            if (index > -1)
+                return index;
+
+            index = _cache.IndexOfLeastUse();
+
+            if (index > -1)
+                return index;
+
+            throw new Exception("No valid index was found, cannot use -1");
         }
 
         private void UpdateCacheItems(object sender, ElapsedEventArgs e)
