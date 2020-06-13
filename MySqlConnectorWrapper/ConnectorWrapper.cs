@@ -202,7 +202,9 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
 
             try
             {
+#pragma warning disable CA2100 // The SQL Query passed is assumed to be safe with no user-input badly parsed in.
                 command.CommandText = query.QueryString;
+#pragma warning restore CA2100 // The SQL Query passed is assumed to be safe with no user-input badly parsed in.
                 command.Parameters.Clear();
 
                 foreach (var param in query.QueryParameters)
@@ -275,17 +277,6 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
             }
 
             return queryOutput;
-        }
-
-
-        /// <summary>
-        ///     Removes a specific item from the cache, based on the query input.
-        /// </summary>
-        /// <param name="query">The query related to the item in cache to be removed.</param>
-        /// <returns>If it successfully removed the item from the cache.</returns>
-        protected bool RemoveItemFromCache(Query query)
-        {
-            return Configuration.UseCache && _cacheManager.RemoveItemFromCache(query);
         }
 
         /// <summary>
