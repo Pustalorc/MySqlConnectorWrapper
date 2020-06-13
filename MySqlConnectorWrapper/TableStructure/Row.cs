@@ -23,7 +23,8 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.TableStructure
         ///     Retrieves a value based on the column name.
         /// </summary>
         /// <param name="key">The name of the column that should have the value.</param>
-        public object this[string key] => _columns.FirstOrDefault(k => k.Name.Equals(key, StringComparison.Ordinal))?.Value;
+        public object this[string key] =>
+            _columns.FirstOrDefault(k => k.Name.Equals(key, StringComparison.Ordinal))?.Value;
 
         /// <summary>
         ///     Retrieves the column with the specified index.

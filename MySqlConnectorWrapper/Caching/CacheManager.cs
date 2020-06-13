@@ -84,7 +84,10 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
 
             var first = _cache.Where(k => k != null).OrderByDescending(k => k.Weight).FirstOrDefault();
 
-            return first == null ? _cache.FindFirstIndexNull() : _cache.FindFirstIndex(k => k?.Query.QueryString.Equals(first.Query.QueryString, StringComparison.OrdinalIgnoreCase) == true);
+            return first == null
+                ? _cache.FindFirstIndexNull()
+                : _cache.FindFirstIndex(k =>
+                    k?.Query.QueryString.Equals(first.Query.QueryString, StringComparison.OrdinalIgnoreCase) == true);
         }
 
         private void UpdateCacheItems(object sender, ElapsedEventArgs e)
