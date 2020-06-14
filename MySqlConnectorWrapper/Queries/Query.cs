@@ -9,6 +9,11 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
     public sealed class Query
     {
         /// <summary>
+        ///     The unique identifier for this query. If equal to another, it will be used to replace its retrieved data. Use with care.
+        /// </summary>
+        public readonly object Identifier;
+
+        /// <summary>
         ///     The callback for when execution of this query is finished.
         /// </summary>
         public readonly QueryCallback QueryCallback;
@@ -36,14 +41,17 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
         /// <summary>
         ///     Constructor for the query.
         /// </summary>
+        /// <param name="identifier">The unique identifier for this query. If equal to another queries', it will be used to replace its retrieved data.</param>
         /// <param name="query">The string of the query to execute.</param>
         /// <param name="type">The type of the query.</param>
         /// <param name="callback">The callback for when execution of the query is finished.</param>
         /// <param name="shouldCache">If the query should be cached or not after executing.</param>
         /// <param name="queryParameters">The parameters for the query.</param>
-        public Query(string query, EQueryType type, QueryCallback callback = null, bool shouldCache = false,
+        public Query(object identifier, string query, EQueryType type, QueryCallback callback = null,
+            bool shouldCache = false,
             params MySqlParameter[] queryParameters)
         {
+            Identifier = identifier;
             QueryString = query;
             QueryType = type;
             QueryCallback = callback;
