@@ -51,7 +51,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         /// <returns>The cache item if it is found or null otherwise.</returns>
         public QueryOutput GetItemInCache(Query query)
         {
-            var cachedQuery = _cache.FirstOrDefault(k => k?.Query.Identifier == query.Identifier);
+            var cachedQuery = _cache.FirstOrDefault(k => k?.Query.QueryString.Equals(query.QueryString, StringComparison.OrdinalIgnoreCase) == true);
 
             if (cachedQuery == null)
                 return null;
@@ -85,7 +85,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
 
             return first == null
                 ? _cache.FindFirstIndexNull()
-                : _cache.FindFirstIndex(k => k?.Query.Identifier == first.Query.Identifier);
+                : _cache.FindFirstIndex(k => k?.Query.QueryString.Equals(first.Query.QueryString, StringComparison.OrdinalIgnoreCase) == true);
         }
 
         private void UpdateCacheItems(object sender, ElapsedEventArgs e)

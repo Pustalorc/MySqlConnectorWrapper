@@ -146,7 +146,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                 catch (Exception ex)
                 {
                     Utils.LogConsole("MySqlConnectorWrapper.ExecuteQuery",
-                        $"Query \"{query.QueryString}\" [ID: {query.Identifier}] threw:\n{ex.Message}");
+                        $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
                 }
                 finally
                 {
@@ -186,7 +186,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                 catch (Exception ex)
                 {
                     Utils.LogConsole("MySqlConnectorWrapper.ExecuteQuery",
-                        $"Query \"{query.QueryString}\" [ID: {query.Identifier}] threw:\n{ex.Message}");
+                        $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
                 }
                 finally
                 {
@@ -288,13 +288,13 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                                     catch (Exception ex)
                                     {
                                         Utils.LogConsole("MySqlConnectorWrapper.Reader",
-                                            $"[During READ] Query \"{query.QueryString}\" [ID: {query.Identifier}] threw:\n{ex.Message}");
+                                            $"[During READ] Query \"{query.QueryString}\" threw:\n{ex.Message}");
                                     }
                             }
                             catch (Exception ex)
                             {
                                 Utils.LogConsole("MySqlConnectorWrapper.Reader",
-                                    $"Query \"{query.QueryString}\" [ID: {query.Identifier}] threw:\n{ex.Message}");
+                                    $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
                             }
                             finally
                             {
@@ -313,7 +313,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                 catch (Exception ex)
                 {
                     Utils.LogConsole("MySqlConnectorWrapper.QueryCallback",
-                        $"Query \"{query.QueryString}\" [ID: {query.Identifier}] threw during callback:\n{ex.Message}");
+                        $"Query \"{query.QueryString}\" threw during callback:\n{ex.Message}");
                 }
 
                 if (Configuration.UseCache && query.ShouldCache)
@@ -322,7 +322,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
             catch (Exception ex)
             {
                 Utils.LogConsole("MySqlConnectorWrapper.RunCommand",
-                    $"Query \"{query.QueryString}\" [ID: {query.Identifier}] threw:\n{ex.Message}");
+                    $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
             }
 
             return queryOutput;
@@ -377,13 +377,13 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                                     catch (Exception ex)
                                     {
                                         Utils.LogConsole("MySqlConnectorWrapper.Reader",
-                                            $"[During READ] Query \"{query.QueryString}\" [ID: {query.Identifier}] threw:\n{ex.Message}");
+                                            $"[During READ] Query \"{query.QueryString}\" threw:\n{ex.Message}");
                                     }
                             }
                             catch (Exception ex)
                             {
                                 Utils.LogConsole("MySqlConnectorWrapper.Reader",
-                                    $"Query \"{query.QueryString}\" [ID: {query.Identifier}] threw:\n{ex.Message}");
+                                    $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
                             }
                             finally
                             {
@@ -402,7 +402,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                 catch (Exception ex)
                 {
                     Utils.LogConsole("MySqlConnectorWrapper.QueryCallback",
-                        $"Query \"{query.QueryString}\" [ID: {query.Identifier}] threw during callback:\n{ex.Message}");
+                        $"Query \"{query.QueryString}\" threw during callback:\n{ex.Message}");
                 }
 
                 if (Configuration.UseCache && query.ShouldCache)
@@ -411,7 +411,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
             catch (Exception ex)
             {
                 Utils.LogConsole("MySqlConnectorWrapper.RunCommand",
-                    $"Query \"{query.QueryString}\" [ID: {query.Identifier}] threw:\n{ex.Message}");
+                    $"Query \"{query.QueryString}\" threw:\n{ex.Message}");
             }
 
             return queryOutput;
