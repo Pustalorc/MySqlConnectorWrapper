@@ -51,7 +51,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Caching
         /// <returns>The cache item if it is found or null otherwise.</returns>
         public QueryOutput GetItemInCache(Query query)
         {
-            var cachedQuery = _cache.FirstOrDefault(k => k?.Query.QueryString.Equals(query.QueryString, StringComparison.OrdinalIgnoreCase) == true);
+            var cachedQuery = _cache.FirstOrDefault(k => k?.Query.QueryString.Equals(query.QueryString, StringComparison.OrdinalIgnoreCase) == true && k.Query.QueryParameters.Count() == query.QueryParameters.Count() && k.Query.QueryParameters.Select(l => l.Value.ToString()).SequenceEqual(query.QueryParameters.Select(l => l.Value.ToString())));
 
             if (cachedQuery == null)
                 return null;
