@@ -1,17 +1,21 @@
+using Pustalorc.Libraries.FrequencyCache;
+
 namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
 {
     /// <summary>
-    ///     Stores the result from an executed query.
+    /// Stores the result from an executed query.
     /// </summary>
-    public class QueryOutput
+    public sealed class QueryOutput : IIdentifiable
     {
+        public string UniqueIdentifier => Query.UniqueIdentifier;
+
         /// <summary>
-        ///     The query that was executed and is related to the output.
+        /// The query that was executed and is related to the output.
         /// </summary>
         public readonly Query Query;
 
         /// <summary>
-        ///     The output of the executed query.
+        /// The output of the executed query.
         /// </summary>
         public object Output;
 

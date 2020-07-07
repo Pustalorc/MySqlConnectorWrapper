@@ -1,17 +1,17 @@
 namespace Pustalorc.Libraries.MySqlConnectorWrapper.TableStructure
 {
     /// <summary>
-    ///     Defines a column of a table.
+    /// Defines a column of a table.
     /// </summary>
     public sealed class Column
     {
         /// <summary>
-        ///     The name of the column in question.
+        /// The name of the column in question.
         /// </summary>
         public readonly string Name;
 
         /// <summary>
-        ///     The value (if any) of this column for the first or the defined row.
+        /// The value (if any) of this column for the first or the defined row.
         /// </summary>
         public readonly object Value;
 

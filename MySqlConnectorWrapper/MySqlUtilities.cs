@@ -1,16 +1,14 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Pustalorc.Libraries.MySqlConnectorWrapper
 {
     /// <summary>
-    ///     Utilities file. Any global methods are included here.
+    /// Utilities to deal with MySql and logging to console.
     /// </summary>
-    public static class Utils
+    public static class MySqlUtilities
     {
         /// <summary>
-        ///     Log a message to console.
+        /// Log a message to console.
         /// </summary>
         /// <param name="source">Specific source of the message.</param>
         /// <param name="message">The message to be logged to console.</param>
@@ -23,7 +21,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         }
 
         /// <summary>
-        ///     Transforms the input into a valid encapsulated value that can be safely used in a MySql query.
+        /// Transforms the input into a valid encapsulated value that can be safely used in a MySql query.
         /// </summary>
         /// <param name="input">The value to encapsulate.</param>
         /// <returns>The input but encapsulated.</returns>
@@ -43,7 +41,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         }
 
         /// <summary>
-        ///     Repeats a specific character in the string if found.
+        /// Repeats a specific character in the string if found.
         /// </summary>
         /// <param name="input">The input string to cycle through.</param>
         /// <param name="character">The character to repeat.</param>
@@ -61,29 +59,6 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
             }
 
             return output;
-        }
-
-        /// <summary>
-        ///     Returns the index of the first element which satisfies the match within the enumerable.
-        /// </summary>
-        /// <typeparam name="TSource">The type of the array.</typeparam>
-        /// <param name="source">The instance of the enumerable.</param>
-        /// <param name="match">The predicate to match the source with.</param>
-        /// <returns>An index based on the rules of List.FindIndex</returns>
-        public static int FindFirstIndex<TSource>(this IEnumerable<TSource> source, Predicate<TSource> match)
-        {
-            return source.ToList().FindIndex(match);
-        }
-
-        /// <summary>
-        ///     Returns the index of the first element which is null within the array.
-        /// </summary>
-        /// <typeparam name="TSource">A class that can be nullable and that defines the type of the array.</typeparam>
-        /// <param name="source">The instance of the array that the first null case should be found.</param>
-        /// <returns>An index based on the rules of List.FindIndex</returns>
-        public static int FindFirstIndexNull<TSource>(this IEnumerable<TSource> source) where TSource : class
-        {
-            return source.FindFirstIndex(k => k == null);
         }
     }
 }

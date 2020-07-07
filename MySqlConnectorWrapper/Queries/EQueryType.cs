@@ -1,12 +1,12 @@
 namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
 {
     /// <summary>
-    ///     The possible types of queueable queries.
+    /// The possible types of queries.
     /// </summary>
     public enum EQueryType
     {
         /// <summary>
-        ///     A query that requires a single output value. Eg: SELECT `Column` FROM
+        /// A query that requires a single output value. Eg: SELECT `Column` FROM
         /// </summary>
         Scalar,
 

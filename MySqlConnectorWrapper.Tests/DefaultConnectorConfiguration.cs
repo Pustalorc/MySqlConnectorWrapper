@@ -7,10 +7,11 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Tests
         public string DatabaseAddress => "localhost";
         public ushort DatabasePort => 3306;
         public string DatabaseUsername => "root";
-        public string DatabasePassword => "";
+        public string DatabasePassword => "toor";
         public string DatabaseName => "database";
+        public string ConnectionStringExtras => "";
         public bool UseCache => true;
-        public ulong CacheRefreshIntervalMilliseconds => 1250;
-        public byte CacheSize => 15;
+        public double CacheRefreshRequestInterval => 1250;
+        public ulong CacheSize => 15;
     }
 }
