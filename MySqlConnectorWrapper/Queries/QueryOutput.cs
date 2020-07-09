@@ -1,4 +1,4 @@
-using Pustalorc.Libraries.FrequencyCache;
+using Pustalorc.Libraries.FrequencyCache.Interfaces;
 
 namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
 {

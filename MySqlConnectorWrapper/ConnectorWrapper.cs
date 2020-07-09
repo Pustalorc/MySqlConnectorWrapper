@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using MySql.Data;
 using MySql.Data.MySqlClient;
 using Pustalorc.Libraries.FrequencyCache;
+using Pustalorc.Libraries.FrequencyCache.Interfaces;
 using Pustalorc.Libraries.MySqlConnectorWrapper.Configuration;
 using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
 using Pustalorc.Libraries.MySqlConnectorWrapper.TableStructure;
@@ -172,7 +173,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                                             break;
                                     }
 
-                                    var queryOutput = new QueryOutput(query, null);
+                                    QueryOutput queryOutput;
                                     try
                                     {
                                         queryOutput = await RunCommandAsync(query, command);
@@ -180,14 +181,11 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                                     catch (MySqlException ex)
                                     {
                                         if (ex.Message.Equals(Resources.Timeout, StringComparison.OrdinalIgnoreCase))
-                                        {
                                             queryOutput = await RunCommandAsync(query, command);
-                                        }
                                         else
-                                        {
                                             throw;
-                                        }
                                     }
+
                                     result.Add(queryOutput);
                                 }
                             }
@@ -229,7 +227,6 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                     {
                         using (var command = connection.CreateCommand())
                         {
-
                             foreach (var query in queries)
                             {
                                 var output = GetOutputFromCache(query);
@@ -251,7 +248,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                                             break;
                                     }
 
-                                    var queryOutput = new QueryOutput(query, null);
+                                    QueryOutput queryOutput;
                                     try
                                     {
                                         queryOutput = RunCommand(query, command);
@@ -259,14 +256,11 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                                     catch (MySqlException ex)
                                     {
                                         if (ex.Message.Equals(Resources.Timeout, StringComparison.OrdinalIgnoreCase))
-                                        {
                                             queryOutput = RunCommand(query, command);
-                                        }
                                         else
-                                        {
                                             throw;
-                                        }
                                     }
+
                                     result.Add(queryOutput);
                                 }
                             }
@@ -287,6 +281,56 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Requests and updates the cache of the specified query.
+        /// There is no output, as this is just a request.
+        /// </summary>
+        /// <param name="query">The query to update in the cache.</param>
+        public async Task RequestCacheUpdateAsync(Query query)
+        {
+            using (var connection = CreateConnection())
+            {
+                try
+                {
+                    await connection.OpenAsync();
+
+                    using (var command = connection.CreateCommand())
+                    {
+                        await RunCommandAsync(query, command);
+                    }
+                }
+                finally
+                {
+                    await connection.CloseAsync();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Requests and updates the cache of the specified query.
+        /// There is no output, as this is just a request.
+        /// </summary>
+        /// <param name="query">The query to update in the cache.</param>
+        public void RequestCacheUpdate(Query query)
+        {
+            using (var connection = CreateConnection())
+            {
+                try
+                {
+                    connection.Open();
+
+                    using (var command = connection.CreateCommand())
+                    {
+                        RunCommand(query, command);
+                    }
+                }
+                finally
+                {
+                    connection.Close();
+                }
+            }
         }
 
         /// <summary>
@@ -363,7 +407,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         /// <param name="query">The query to be ran.</param>
         /// <param name="command">The command context to be used.</param>
         /// <returns>The output after the query gets executed.</returns>
-        private QueryOutput RunCommand(Query query, MySqlCommand command, bool ignoreCache = false)
+        private QueryOutput RunCommand(Query query, MySqlCommand command)
         {
             var queryOutput = new QueryOutput(query, null);
 
@@ -408,7 +452,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
 
             RaiseCallbacks(query.Callbacks, queryOutput);
 
-            if (!ignoreCache && Configuration.UseCache && query.ShouldCache)
+            if (Configuration.UseCache && query.ShouldCache)
                 m_CacheManager.StoreUpdateItem(queryOutput);
 
             return queryOutput;
@@ -435,7 +479,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         /// </summary>
         /// <param name="callbacks">The callbacks to be raised.</param>
         /// <param name="output">The output to be passed to all the callbacks.</param>
-        private void RaiseCallbacks(IEnumerable<QueryCallback> callbacks, QueryOutput output)
+        private static void RaiseCallbacks(IEnumerable<QueryCallback> callbacks, QueryOutput output)
         {
             foreach (var callback in callbacks)
                 callback?.Invoke(output);
@@ -445,29 +489,17 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         /// Deals with the event raised by the cache to update the requested element. A single access to the identifiable is needed.
         /// </summary>
         /// <param name="item">The element in cache to update.</param>
-        private void CacheItemUpdateRequested(CachedItem item)
+        /// <param name="identifiable">The inner identifiable of the previous item.</param>
+        private void CacheItemUpdateRequested(CachedItem item, IIdentifiable identifiable)
         {
-            var identifiable = item.Identifiable;
-            using (var connection = CreateConnection())
+            switch (identifiable)
             {
-                try
-                {
-                    using (var command = connection.CreateCommand())
-                    {
-                        if (identifiable is QueryOutput queryOutput)
-                        {
-                            identifiable = RunCommand(queryOutput.Query, command, true);
-                        }
-                        else if (identifiable is Query query)
-                        {
-                            identifiable = RunCommand(query, command, true);
-                        }
-                    }
-                }
-                finally
-                {
-                    connection.Close();
-                }
+                case QueryOutput queryOutput:
+                    RequestCacheUpdate(queryOutput.Query);
+                    break;
+                case Query query:
+                    RequestCacheUpdate(query);
+                    break;
             }
         }
     }

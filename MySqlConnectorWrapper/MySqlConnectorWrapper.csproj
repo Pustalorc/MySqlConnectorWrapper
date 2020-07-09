@@ -14,10 +14,12 @@
     <RepositoryUrl>https://github.com/Pustalorc/MySqlConnectorWrapper</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageTags>MySql MySql.Data Connector Wrapper Caching</PackageTags>
-    <PackageReleaseNotes>First nuget release.</PackageReleaseNotes>
+    <PackageReleaseNotes>Update to the newer cache system.
+Add new query constructors with multiple overload options.
+Add a RequestCacheUpdate method to directly request the cache to update a query.</PackageReleaseNotes>
     <NeutralLanguage>en</NeutralLanguage>
     <PackageId>Pustalorc.MySqlConnectorWrapper</PackageId>
-    <Version>2.2.0</Version>
+    <Version>2.2.1</Version>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
@@ -45,7 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Pustalorc.FrequencyCache" Version="1.0.0" />
+    <PackageReference Include="Pustalorc.FrequencyCache" Version="1.0.2" />
   </ItemGroup>
 
 </Project>
