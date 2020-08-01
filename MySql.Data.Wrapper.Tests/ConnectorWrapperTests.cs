@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
+using Pustalorc.MySql.Data.Wrapper.Queries;
 
-namespace Pustalorc.Libraries.MySqlConnectorWrapper.Tests
+namespace Pustalorc.MySql.Data.Wrapper.Tests
 {
     [TestClass]
     public class ConnectorWrapperTests

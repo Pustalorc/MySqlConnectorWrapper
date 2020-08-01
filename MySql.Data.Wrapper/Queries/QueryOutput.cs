@@ -1,6 +1,6 @@
 using Pustalorc.Libraries.FrequencyCache.Interfaces;
 
-namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
+namespace Pustalorc.MySql.Data.Wrapper.Queries
 {
     /// <summary>
     /// Stores the result from an executed query.

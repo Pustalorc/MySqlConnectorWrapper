@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using MySql.Data.MySqlClient;
 using Pustalorc.Libraries.FrequencyCache.Interfaces;
 
-namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
+namespace Pustalorc.MySql.Data.Wrapper.Queries
 {
     /// <summary>
     /// Base class for a query.
@@ -79,11 +79,13 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
 
         #region Overloads for string + type + IEnumerable<T>
 
-        public Query(string query, EQueryType type, IEnumerable<MySqlParameter> parameters, params QueryCallback[] callbacks) : this(uniqueIdentifier: null, query, type, false, parameters, callbacks)
+        public Query(string query, EQueryType type, IEnumerable<MySqlParameter> parameters,
+            params QueryCallback[] callbacks) : this(uniqueIdentifier: null, query, type, false, parameters, callbacks)
         {
         }
 
-        public Query(string query, EQueryType type, IEnumerable<QueryCallback> callbacks, params MySqlParameter[] parameters) : this(uniqueIdentifier: null, query, type, false, parameters, callbacks)
+        public Query(string query, EQueryType type, IEnumerable<QueryCallback> callbacks,
+            params MySqlParameter[] parameters) : this(null, query, type, false, parameters, callbacks)
         {
         }
 
@@ -143,11 +145,14 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
 
         #region Overloads for object + string + type + IEnumerable<T>
 
-        public Query(object identifier, string query, EQueryType type, IEnumerable<QueryCallback> callbacks, params MySqlParameter[] parameters) : this(uniqueIdentifier: identifier, query, type, false, parameters, callbacks)
+        public Query(object identifier, string query, EQueryType type, IEnumerable<QueryCallback> callbacks,
+            params MySqlParameter[] parameters) : this(identifier, query, type, false, parameters, callbacks)
         {
         }
 
-        public Query(object identifier, string query, EQueryType type,IEnumerable<MySqlParameter> parameters, params QueryCallback[] callbacks) : this(uniqueIdentifier: identifier, query, type, false, parameters, callbacks)
+        public Query(object identifier, string query, EQueryType type, IEnumerable<MySqlParameter> parameters,
+            params QueryCallback[] callbacks) : this(uniqueIdentifier: identifier, query, type, false, parameters,
+            callbacks)
         {
         }
 

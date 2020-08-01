@@ -1,4 +1,4 @@
-namespace Pustalorc.Libraries.MySqlConnectorWrapper.TableStructure
+namespace Pustalorc.MySqlConnector.Wrapper.TableStructure
 {
     /// <summary>
     /// Defines a column of a table.

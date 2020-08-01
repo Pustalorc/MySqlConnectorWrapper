@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Pustalorc.Libraries.MySqlConnectorWrapper.TableStructure
+namespace Pustalorc.MySqlConnector.Wrapper.TableStructure
 {
     /// <summary>
     /// Defines a Row in a table.

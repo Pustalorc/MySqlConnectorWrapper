@@ -1,4 +1,4 @@
-namespace Pustalorc.Libraries.MySqlConnectorWrapper.Queries
+namespace Pustalorc.MySql.Data.Wrapper.Queries
 {
     /// <summary>
     /// The possible types of queries.

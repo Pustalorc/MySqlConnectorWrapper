@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net461;net48</TargetFrameworks>
+    <AssemblyName>Pustalorc.MySqlConnector.Wrapper</AssemblyName>
+    <RootNamespace>Pustalorc.MySqlConnector.Wrapper</RootNamespace>
+    <Version>2.3.0</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Pustalorc</Authors>
+    <Description>A wrapper for MySqlConnector which helps running queries in a simple manner without the need to fully write the same code for MySql over a large project.</Description>
+    <Copyright>Copyright © 2020 Pustalorc</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Pustalorc/MySqlConnectorWrapper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Pustalorc/MySqlConnectorWrapper</RepositoryUrl>
+    <RepositoryType>Github</RepositoryType>
+    <PackageTags>MySql MySqlConnector Connector Wrapper Caching</PackageTags>
+    <PackageReleaseNotes>Switch reference from MySql.Data 8.0.20 to MySqlConnector 1.0.0
+Update to Pustalorc.FrequencyCache 1.1.0</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MySqlConnector" Version="1.0.0" />
+    <PackageReference Include="Pustalorc.FrequencyCache" Version="1.1.0" />
+  </ItemGroup>
+
+</Project>

@@ -1,25 +1,12 @@
 using System;
 
-namespace Pustalorc.Libraries.MySqlConnectorWrapper
+namespace Pustalorc.MySqlConnector.Wrapper
 {
     /// <summary>
     /// Utilities to deal with MySql and logging to console.
     /// </summary>
     public static class MySqlUtilities
     {
-        /// <summary>
-        /// Log a message to console.
-        /// </summary>
-        /// <param name="source">Specific source of the message.</param>
-        /// <param name="message">The message to be logged to console.</param>
-        /// <param name="consoleColor">The color to be used for the message in console.</param>
-        public static void LogConsole(object source, object message, ConsoleColor consoleColor = ConsoleColor.Green)
-        {
-            Console.ForegroundColor = consoleColor;
-            Console.WriteLine($"[{source}]: {message}");
-            Console.ResetColor();
-        }
-
         /// <summary>
         /// Transforms the input into a valid encapsulated value that can be safely used in a MySql query.
         /// </summary>

@@ -1,16 +1,13 @@
-namespace Pustalorc.Libraries.MySqlConnectorWrapper.Configuration
+﻿using Pustalorc.MySql.Data.Wrapper.Configuration;
+
+namespace Pustalorc.MySql.Data.Wrapper.Tests
 {
-    /// <inheritdoc />
-    /// <summary>
-    /// This is an example configuration. To modify it, create your own connector configuration by inheriting from the
-    /// IConnectorConfiguration interface.
-    /// </summary>
     public sealed class DefaultConnectorConfiguration : IConnectorConfiguration
     {
         public string DatabaseAddress => "localhost";
         public ushort DatabasePort => 3306;
-        public string DatabaseUsername => "myUsername";
-        public string DatabasePassword => "password";
+        public string DatabaseUsername => "root";
+        public string DatabasePassword => "toor";
         public string DatabaseName => "database";
         public string ConnectionStringExtras => "";
         public bool UseCache => true;

@@ -1,4 +1,4 @@
-﻿namespace Pustalorc.Libraries.MySqlConnectorWrapper.Tests
+﻿namespace Pustalorc.MySql.Data.Wrapper.Tests
 {
     public class Database : ConnectorWrapper<DefaultConnectorConfiguration>
     {

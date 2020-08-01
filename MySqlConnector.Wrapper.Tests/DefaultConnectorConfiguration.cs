@@ -1,6 +1,6 @@
-﻿using Pustalorc.Libraries.MySqlConnectorWrapper.Configuration;
+﻿using Pustalorc.MySqlConnector.Wrapper.Configuration;
 
-namespace Pustalorc.Libraries.MySqlConnectorWrapper.Tests
+namespace Pustalorc.MySqlConnector.Wrapper.Tests
 {
     public sealed class DefaultConnectorConfiguration : IConnectorConfiguration
     {

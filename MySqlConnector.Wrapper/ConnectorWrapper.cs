@@ -1,17 +1,15 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
-using MySql.Data;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using Pustalorc.Libraries.FrequencyCache;
-using Pustalorc.Libraries.FrequencyCache.Interfaces;
-using Pustalorc.Libraries.MySqlConnectorWrapper.Configuration;
-using Pustalorc.Libraries.MySqlConnectorWrapper.Queries;
-using Pustalorc.Libraries.MySqlConnectorWrapper.TableStructure;
+using Pustalorc.MySqlConnector.Wrapper.Configuration;
+using Pustalorc.MySqlConnector.Wrapper.Queries;
+using Pustalorc.MySqlConnector.Wrapper.TableStructure;
 
-namespace Pustalorc.Libraries.MySqlConnectorWrapper
+namespace Pustalorc.MySqlConnector.Wrapper
 {
     /// <summary>
     /// The connector. Inherit it and pass a configuration class to it.
@@ -22,7 +20,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         /// <summary>
         /// The caching system that the connector should use.
         /// </summary>
-        private readonly CacheManager m_CacheManager;
+        private readonly CacheManager<QueryOutput> m_CacheManager;
 
         /// <summary>
         /// The original unmodified passed configuration to the class.
@@ -40,7 +38,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
 
             if (configuration.UseCache)
             {
-                m_CacheManager = new CacheManager(configuration);
+                m_CacheManager = new CacheManager<QueryOutput>(configuration);
                 m_CacheManager.OnCachedItemUpdateRequested += CacheItemUpdateRequested;
             }
 
@@ -152,6 +150,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                     {
                         using (var command = connection.CreateCommand())
                         {
+                            command.Transaction = transaction;
                             foreach (var query in queries)
                             {
                                 var output = GetOutputFromCache(query);
@@ -173,19 +172,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                                             break;
                                     }
 
-                                    QueryOutput queryOutput;
-                                    try
-                                    {
-                                        queryOutput = await RunCommandAsync(query, command);
-                                    }
-                                    catch (MySqlException ex)
-                                    {
-                                        if (ex.Message.Equals(Resources.Timeout, StringComparison.OrdinalIgnoreCase))
-                                            queryOutput = await RunCommandAsync(query, command);
-                                        else
-                                            throw;
-                                    }
-
+                                    var queryOutput = await RunCommandAsync(query, command);
                                     result.Add(queryOutput);
                                 }
                             }
@@ -227,6 +214,8 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                     {
                         using (var command = connection.CreateCommand())
                         {
+                            command.Transaction = transaction;
+
                             foreach (var query in queries)
                             {
                                 var output = GetOutputFromCache(query);
@@ -248,19 +237,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
                                             break;
                                     }
 
-                                    QueryOutput queryOutput;
-                                    try
-                                    {
-                                        queryOutput = RunCommand(query, command);
-                                    }
-                                    catch (MySqlException ex)
-                                    {
-                                        if (ex.Message.Equals(Resources.Timeout, StringComparison.OrdinalIgnoreCase))
-                                            queryOutput = RunCommand(query, command);
-                                        else
-                                            throw;
-                                    }
-
+                                    var queryOutput = RunCommand(query, command);
                                     result.Add(queryOutput);
                                 }
                             }
@@ -467,7 +444,7 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         {
             if (!Configuration.UseCache || !query.ShouldCache) return null;
 
-            var cache = m_CacheManager.GetItemInCache(query);
+            var cache = m_CacheManager.GetItemInCache(new QueryOutput(query, null));
 
             if (cache == null || !(cache.Identifiable is QueryOutput queryOutput)) return null;
 
@@ -490,17 +467,9 @@ namespace Pustalorc.Libraries.MySqlConnectorWrapper
         /// </summary>
         /// <param name="item">The element in cache to update.</param>
         /// <param name="identifiable">The inner identifiable of the previous item.</param>
-        private void CacheItemUpdateRequested(CachedItem item, IIdentifiable identifiable)
+        private void CacheItemUpdateRequested(CachedItem<QueryOutput> item, ref QueryOutput identifiable)
         {
-            switch (identifiable)
-            {
-                case QueryOutput queryOutput:
-                    RequestCacheUpdate(queryOutput.Query);
-                    break;
-                case Query query:
-                    RequestCacheUpdate(query);
-                    break;
-            }
+            RequestCacheUpdate(identifiable.Query);
         }
     }
 }

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net461;net48</TargetFrameworks>
+    <RootNamespace>Pustalorc.MySql.Data.Wrapper</RootNamespace>
+    <AssemblyName>Pustalorc.MySql.Data.Wrapper</AssemblyName>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Description>A wrapper for MySql.Data which helps running queries in a simple manner without the need to fully write the same code for MySql over a large project.</Description>
+    <Authors>Pustalorc</Authors>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Copyright>Copyright © 2020 Pustalorc</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Pustalorc/MySqlConnectorWrapper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Pustalorc/MySqlConnectorWrapper</RepositoryUrl>
+    <RepositoryType>Github</RepositoryType>
+    <PackageTags>MySql MySql.Data Connector Wrapper Caching</PackageTags>
+    <PackageReleaseNotes>Update to MySql.Data 8.0.21
+Update to Pustalorc.FrequencyCache 1.1.0</PackageReleaseNotes>
+    <NeutralLanguage>en</NeutralLanguage>
+    <PackageId>Pustalorc.MySql.Data.Wrapper</PackageId>
+    <Version>2.3.0</Version>
+    <Product>Pustalorc.MySql.Data.Wrapper</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MySql.Data" Version="8.0.21" />
+    <PackageReference Include="Pustalorc.FrequencyCache" Version="1.1.0" />
+  </ItemGroup>
+
+</Project>

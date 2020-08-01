@@ -1,6 +1,6 @@
 using Pustalorc.Libraries.FrequencyCache.Interfaces;
 
-namespace Pustalorc.Libraries.MySqlConnectorWrapper.Configuration
+namespace Pustalorc.MySql.Data.Wrapper.Configuration
 {
     /// <summary>
     /// Basic configuration required for the connector to work properly.
