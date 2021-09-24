@@ -2,29 +2,34 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1;net461;net48</TargetFrameworks>
-    <RootNamespace>Pustalorc.MySql.Data.Wrapper</RootNamespace>
     <AssemblyName>Pustalorc.MySql.Data.Wrapper</AssemblyName>
+    <RootNamespace>Pustalorc.MySql.Data.Wrapper</RootNamespace>
+    <Version>3.0.0</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Description>A wrapper for MySql.Data which helps running queries in a simple manner without the need to fully write the same code for MySql over a large project.</Description>
     <Authors>Pustalorc</Authors>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <Copyright>Copyright © 2020 Pustalorc</Copyright>
+    <Description>A wrapper for MySql.Data which helps running queries in a simple manner without the need to fully write the same code for MySql over a large project.</Description>
+    <Copyright>Copyright © 2020-2021 Pustalorc</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Pustalorc/MySqlConnectorWrapper</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Pustalorc/MySqlConnectorWrapper</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageTags>MySql MySql.Data Connector Wrapper Caching</PackageTags>
-    <PackageReleaseNotes>Update to MySql.Data 8.0.21
-Update to Pustalorc.FrequencyCache 1.1.0</PackageReleaseNotes>
-    <NeutralLanguage>en</NeutralLanguage>
-    <PackageId>Pustalorc.MySql.Data.Wrapper</PackageId>
-    <Version>2.3.0</Version>
-    <Product>Pustalorc.MySql.Data.Wrapper</Product>
+    <PackageReleaseNotes>Update to MySql.Data 8.0.26
+Update to Pustalorc.FrequencyCache 1.2.0</PackageReleaseNotes>
+    <PackageId>Pustalorc.MySqlConnectorWrapper</PackageId>
+    <PackageVersion>3.0.0-MySqlData</PackageVersion>
+    <Product>Pustalorc.MySqlConnectorWrapper</Product>
+    <LangVersion>latestmajor</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DocumentationFile>bin\Release\MySql.Data.Wrapper.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MySql.Data" Version="8.0.21" />
-    <PackageReference Include="Pustalorc.FrequencyCache" Version="1.1.0" />
+    <PackageReference Include="MySql.Data" Version="8.0.26" />
+    <PackageReference Include="Pustalorc.FrequencyCache" Version="1.2.0" />
   </ItemGroup>
 
 </Project>

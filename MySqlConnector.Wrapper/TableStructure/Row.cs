@@ -1,35 +1,50 @@
-using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using JetBrains.Annotations;
 
 namespace Pustalorc.MySqlConnector.Wrapper.TableStructure
 {
     /// <summary>
-    /// Defines a Row in a table.
+    /// Defines a row in a table.
     /// </summary>
-    public sealed class Row
+    [UsedImplicitly]
+    public class Row
     {
         /// <summary>
-        /// The columns that this row has.
+        /// The columns and their respective values for this row.
         /// </summary>
-        private readonly List<Column> m_Columns;
+        public readonly IReadOnlyList<Column> Columns;
 
+        /// <summary>
+        /// Columns indexed by name.
+        /// </summary>
+        protected readonly Dictionary<string, int> IndexedColumns;
+
+        /// <summary>
+        /// Constructs a new row.
+        /// </summary>
+        /// <param name="columns">The columns and their respective values for this row.</param>
         public Row(IEnumerable<Column> columns)
         {
-            m_Columns = columns.ToList();
+            Columns = new ReadOnlyCollection<Column>(columns.ToList());
+            IndexedColumns = new Dictionary<string, int>();
+
+            for (var i = 0; i < Columns.Count; i++)
+                IndexedColumns.Add(Columns[i].Name, i);
         }
 
         /// <summary>
-        /// Retrieves a value based on the column name.
+        /// Gets a column from the column name. If no column is found, returns null.
         /// </summary>
-        /// <param name="key">The name of the column that should have the value.</param>
-        public object this[string key] =>
-            m_Columns.FirstOrDefault(k => k.Name.Equals(key, StringComparison.Ordinal))?.Value;
+        /// <param name="key">The name of the column to get.</param>
+        [UsedImplicitly]
+        public Column? this[string key] => !IndexedColumns.TryGetValue(key, out var value) ? null : this[value];
 
         /// <summary>
-        /// Retrieves the column with the specified index.
+        /// Gets a column by index.
         /// </summary>
-        /// <param name="index">The index of the column to retrieve the value of.</param>
-        public Column this[int index] => m_Columns.Count < index ? null : m_Columns[index];
+        /// <param name="index">The index of the column.</param>
+        public Column this[int index] => Columns[index];
     }
 }

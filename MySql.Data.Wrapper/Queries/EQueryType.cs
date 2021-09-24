@@ -11,12 +11,12 @@ namespace Pustalorc.MySql.Data.Wrapper.Queries
         Scalar,
 
         /// <summary>
-        ///     A query that does not expect an output value (other than the number of affected rows). Eg: INSERT INTO
+        /// A query that does not expect an output value (other than the number of affected rows). Eg: INSERT INTO
         /// </summary>
         NonQuery,
 
         /// <summary>
-        ///     A Query that requires multiple output values. Eg: SELECT * FROM
+        /// A Query that requires multiple output values. Eg: SELECT * FROM
         /// </summary>
         Reader
     }

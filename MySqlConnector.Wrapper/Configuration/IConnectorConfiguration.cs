@@ -8,38 +8,38 @@ namespace Pustalorc.MySqlConnector.Wrapper.Configuration
     public interface IConnectorConfiguration : ICacheConfiguration
     {
         /// <summary>
+        /// The format of the connection string. May include extras to it.
+        /// </summary>
+        public string ConnectionStringFormat { get; }
+
+        /// <summary>
         /// The address (IP or Domain Name) of the database.
         /// </summary>
-        string DatabaseAddress { get; }
+        public string DatabaseAddress { get; }
 
         /// <summary>
         /// The port of the database (3306 by default).
         /// </summary>
-        ushort DatabasePort { get; }
+        public ushort DatabasePort { get; }
 
         /// <summary>
         /// The username for read (and maybe write) access to the database.
         /// </summary>
-        string DatabaseUsername { get; }
+        public string DatabaseUsername { get; }
 
         /// <summary>
         /// The password for the username above to provide the access to the database.
         /// </summary>
-        string DatabasePassword { get; }
+        public string DatabasePassword { get; }
 
         /// <summary>
         /// The name of the database where main data should be stored at.
         /// </summary>
-        string DatabaseName { get; }
-
-        /// <summary>
-        /// Extra settings to be passed onto the connection string.
-        /// </summary>
-        string ConnectionStringExtras { get; }
+        public string DatabaseName { get; }
 
         /// <summary>
         /// If set to true, any read queries will also be cached and updated once in a while.
         /// </summary>
-        bool UseCache { get; }
+        public bool UseCache { get; }
     }
 }

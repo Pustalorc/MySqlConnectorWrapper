@@ -1,25 +1,29 @@
-using Pustalorc.Libraries.FrequencyCache.Interfaces;
+using JetBrains.Annotations;
 
 namespace Pustalorc.MySqlConnector.Wrapper.Queries
 {
     /// <summary>
     /// Stores the result from an executed query.
     /// </summary>
-    public sealed class QueryOutput : IIdentifiable
+    [UsedImplicitly]
+    public class QueryOutput<T> where T : class
     {
-        public string UniqueIdentifier => Query.UniqueIdentifier;
-
         /// <summary>
         /// The query that was executed and is related to the output.
         /// </summary>
-        public readonly Query Query;
+        public readonly Query<T> Query;
 
         /// <summary>
         /// The output of the executed query.
         /// </summary>
-        public object Output;
+        public object? Output;
 
-        public QueryOutput(Query query, object output)
+        /// <summary>
+        /// Constructs a new output for the query.
+        /// </summary>
+        /// <param name="query"></param>
+        /// <param name="output"></param>
+        public QueryOutput(Query<T> query, object? output)
         {
             Query = query;
             Output = output;

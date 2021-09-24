@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using MySql.Data;
+using JetBrains.Annotations;
 using MySql.Data.MySqlClient;
 using Pustalorc.Libraries.FrequencyCache;
 using Pustalorc.MySql.Data.Wrapper.Configuration;
@@ -15,57 +16,111 @@ namespace Pustalorc.MySql.Data.Wrapper
     /// <summary>
     /// The connector. Inherit it and pass a configuration class to it.
     /// </summary>
-    /// <typeparam name="T">The type, which inherits from IConnectorConfiguration, which should be used by the connector.</typeparam>
-    public abstract class ConnectorWrapper<T> where T : IConnectorConfiguration
+    /// <typeparam name="T1">The type, which inherits from IConnectorConfiguration, which should be used by the connector as configuration.</typeparam>
+    /// <typeparam name="T2">The type which is used as a key identifier in cache.</typeparam>
+    [UsedImplicitly]
+    public class ConnectorWrapper<T1, T2> where T1 : IConnectorConfiguration where T2 : class
     {
         /// <summary>
         /// The caching system that the connector should use.
         /// </summary>
-        private readonly CacheManager<QueryOutput> m_CacheManager;
+        protected readonly Cache<QueryOutput<T2>, T2> Cache;
 
         /// <summary>
         /// The original unmodified passed configuration to the class.
         /// </summary>
-        protected internal readonly T Configuration;
+        protected readonly T1 Configuration;
+
+        /// <summary>
+        /// The connection currently in use.
+        /// </summary>
+        protected readonly ThreadLocal<MySqlConnection> Connection;
 
         /// <summary>
         /// Default constructor, only requires an instance of type T to be used as main configuration.
-        /// This already tests if the connection can be opened or not.
         /// </summary>
-        /// <param name="configuration">The instance of type T to be used as main configuration</param>
-        protected ConnectorWrapper(T configuration)
+        /// <param name="configuration">The instance of type T to be used as main configuration.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{T2}"/> that defines how the key type will be compared in cache.</param>
+        /// <remarks>
+        /// Testing if the connector can connect to the MySql server is recommended. Use <see cref="TestConnection"/> for such.
+        /// </remarks>
+        public ConnectorWrapper(T1 configuration, IEqualityComparer<T2> comparer)
         {
             Configuration = configuration;
+            Connection = new ThreadLocal<MySqlConnection>();
 
-            if (configuration.UseCache)
+            if (!configuration.UseCache)
             {
-                m_CacheManager = new CacheManager<QueryOutput>(configuration);
-                m_CacheManager.OnCachedItemUpdateRequested += CacheItemUpdateRequested;
+                Cache = null!;
+                return;
             }
 
-            using (var connection = CreateConnection())
+            Cache = new Cache<QueryOutput<T2>, T2>(configuration, comparer);
+            Cache.OnCachedItemUpdateRequested += CacheItemUpdateRequested;
+        }
+
+        /// <summary>
+        /// Creates a new query from inputs.
+        /// </summary>
+        /// <param name="key">The key to identify this query in cache.</param>
+        /// <param name="query">The query string to run.</param>
+        /// <param name="type">The type of query we are running.</param>
+        /// <param name="shouldCache">If the query should be cached at all.</param>
+        /// <param name="parameters">The parameters that will be used on the query string.</param>
+        /// <param name="callbacks">Any callbacks to be raised after the query runs.</param>
+        /// <returns>
+        /// Returns a new <see cref="Query{T2}"/> instance.
+        /// </returns>
+        [UsedImplicitly]
+        public Query<T2> CreateQuery(T2 key, string query, EQueryType type, bool shouldCache = false, IEnumerable<MySqlParameter>? parameters = null, IEnumerable<Query<T2>.QueryCallback>? callbacks = null)
+        {
+            return new Query<T2>(key, query, type, shouldCache, parameters, callbacks);
+        }
+
+        /// <summary>
+        /// Tests the connection. Returns false if the connection throws any exception.
+        /// </summary>
+        /// <param name="exception">Outs null if no exception was raised, otherwise returns the same exception that was raised.</param>
+        /// <returns>
+        /// True if the connection succeeded.
+        /// False if the connection failed.
+        /// </returns>
+        [UsedImplicitly]
+        public virtual bool TestConnection(out Exception? exception)
+        {
+            var connection = GetCreateConnection();
+            exception = null;
+            try
             {
-                try
-                {
-                    connection.Open();
-                }
-                finally
-                {
-                    connection.Close();
-                }
+                connection.Open();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+                return false;
+            }
+            finally
+            {
+                connection.Close();
             }
         }
 
         /// <summary>
-        /// Creates the connection to the MySql Database
+        /// Gets or creates a new connection.
         /// </summary>
-        /// <returns>A MySqlConnection object if it succeeded at creating one from the connection string, null otherwise.</returns>
-        private MySqlConnection CreateConnection()
+        /// <returns>A new MySqlConnection for the current thread.</returns>
+        [UsedImplicitly]
+        protected virtual MySqlConnection GetCreateConnection()
         {
-            return new MySqlConnection(
-                $"SERVER={Configuration.DatabaseAddress};DATABASE={Configuration.DatabaseName};" +
-                $"UID={MySqlUtilities.ToSafeValue(Configuration.DatabaseUsername)};PASSWORD={MySqlUtilities.ToSafeValue(Configuration.DatabasePassword)};" +
-                $"PORT={Configuration.DatabasePort};{Configuration.ConnectionStringExtras}");
+            if (!Connection.IsValueCreated)
+                Connection.Value = new MySqlConnection(string.Format(Configuration.ConnectionStringFormat,
+                    Configuration.DatabaseAddress, Configuration.DatabaseName,
+                    MySqlUtilities.ToSafeConnectionStringValue(Configuration.DatabaseUsername),
+                    MySqlUtilities.ToSafeConnectionStringValue(Configuration.DatabasePassword),
+                    Configuration.DatabasePort));
+
+            return Connection.Value;
         }
 
         /// <summary>
@@ -73,7 +128,8 @@ namespace Pustalorc.MySql.Data.Wrapper
         /// </summary>
         /// <param name="query">The query to be executed.</param>
         /// <returns>The result of the query executed.</returns>
-        public async Task<QueryOutput> ExecuteQueryAsync(Query query)
+        [UsedImplicitly]
+        public virtual async Task<QueryOutput<T2>> ExecuteQueryAsync(Query<T2> query)
         {
             var output = GetOutputFromCache(query);
             if (output != null)
@@ -82,21 +138,21 @@ namespace Pustalorc.MySql.Data.Wrapper
                 return output;
             }
 
-            using (var connection = CreateConnection())
+            var connection = GetCreateConnection();
+            try
             {
-                try
-                {
-                    await connection.OpenAsync();
+                await connection.OpenAsync();
 
-                    using (var command = connection.CreateCommand())
-                    {
-                        return await RunCommandAsync(query, command);
-                    }
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
+#if NETSTANDARD2_1
+                await using var command = connection.CreateCommand();
+#else
+                using var command = connection.CreateCommand();
+#endif
+                return await RunCommandAsync(query, command);
+            }
+            finally
+            {
+                await connection.CloseAsync();
             }
         }
 
@@ -105,7 +161,8 @@ namespace Pustalorc.MySql.Data.Wrapper
         /// </summary>
         /// <param name="query">The query to be executed.</param>
         /// <returns>The result of the query executed.</returns>
-        public QueryOutput ExecuteQuery(Query query)
+        [UsedImplicitly]
+        public virtual QueryOutput<T2> ExecuteQuery(Query<T2> query)
         {
             var output = GetOutputFromCache(query);
             if (output != null)
@@ -114,21 +171,17 @@ namespace Pustalorc.MySql.Data.Wrapper
                 return output;
             }
 
-            using (var connection = CreateConnection())
+            var connection = GetCreateConnection();
+            try
             {
-                try
-                {
-                    connection.Open();
+                connection.Open();
 
-                    using (var command = connection.CreateCommand())
-                    {
-                        return RunCommand(query, command);
-                    }
-                }
-                finally
-                {
-                    connection.Close();
-                }
+                using var command = connection.CreateCommand();
+                return RunCommand(query, command);
+            }
+            finally
+            {
+                connection.Close();
             }
         }
 
@@ -138,70 +191,64 @@ namespace Pustalorc.MySql.Data.Wrapper
         /// </summary>
         /// <param name="queries">The group of queries to be executed.</param>
         /// <returns>The result of the group of queries executed.</returns>
-        public async Task<IEnumerable<QueryOutput>> ExecuteTransactionAsync(params Query[] queries)
+        [UsedImplicitly]
+        public virtual async Task<IEnumerable<QueryOutput<T2>>> ExecuteTransactionAsync(params Query<T2>[] queries)
         {
-            var result = new List<QueryOutput>();
+            var result = new List<QueryOutput<T2>>();
 
-            using (var connection = CreateConnection())
+            var connection = GetCreateConnection();
+            await connection.OpenAsync();
+#if NETSTANDARD2_1
+            await using var transaction = await connection.BeginTransactionAsync();
+#else
+            using var transaction = await connection.BeginTransactionAsync();
+#endif
+            try
             {
-                await connection.OpenAsync();
-                using (var transaction = await connection.BeginTransactionAsync())
+#if NETSTANDARD2_1
+                await using (var command = connection.CreateCommand())
+#else
+                using (var command = connection.CreateCommand())
+#endif
                 {
-                    try
+                    command.Transaction = transaction;
+                    foreach (var query in queries)
                     {
-                        using (var command = connection.CreateCommand())
+                        var output = GetOutputFromCache(query);
+                        if (output != null)
                         {
-                            foreach (var query in queries)
-                            {
-                                var output = GetOutputFromCache(query);
-                                if (output != null)
-                                {
-                                    RaiseCallbacks(query.Callbacks, output);
-                                    result.Add(output);
-                                }
-                                else
-                                {
-                                    switch (connection.State)
-                                    {
-                                        case ConnectionState.Closed:
-                                            await connection.OpenAsync();
-                                            break;
-                                        case ConnectionState.Broken:
-                                            await connection.CloseAsync();
-                                            await connection.OpenAsync();
-                                            break;
-                                    }
-
-                                    QueryOutput queryOutput;
-                                    try
-                                    {
-                                        queryOutput = await RunCommandAsync(query, command);
-                                    }
-                                    catch (MySqlException ex)
-                                    {
-                                        if (ex.Message.Equals(Resources.Timeout, StringComparison.OrdinalIgnoreCase))
-                                            queryOutput = await RunCommandAsync(query, command);
-                                        else
-                                            throw;
-                                    }
-
-                                    result.Add(queryOutput);
-                                }
-                            }
+                            RaiseCallbacks(query.Callbacks, output);
+                            result.Add(output);
                         }
+                        else
+                        {
+                            switch (connection.State)
+                            {
+                                case ConnectionState.Closed:
+                                    await connection.OpenAsync();
+                                    break;
+                                case ConnectionState.Broken:
+                                    await connection.CloseAsync();
+                                    await connection.OpenAsync();
+                                    break;
+                            }
 
-                        transaction.Commit();
-                    }
-                    catch (Exception)
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
-                    finally
-                    {
-                        await connection.CloseAsync();
+                            var queryOutput = await RunCommandAsync(query, command);
+                            result.Add(queryOutput);
+                        }
                     }
                 }
+
+                transaction.Commit();
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                throw;
+            }
+            finally
+            {
+                await connection.CloseAsync();
             }
 
             return result;
@@ -213,70 +260,57 @@ namespace Pustalorc.MySql.Data.Wrapper
         /// </summary>
         /// <param name="queries">The group of queries to be executed.</param>
         /// <returns>The result of the group of queries executed.</returns>
-        public IEnumerable<QueryOutput> ExecuteTransaction(params Query[] queries)
+        [UsedImplicitly]
+        public virtual IEnumerable<QueryOutput<T2>> ExecuteTransaction(params Query<T2>[] queries)
         {
-            var result = new List<QueryOutput>();
+            var result = new List<QueryOutput<T2>>();
 
-            using (var connection = CreateConnection())
+            var connection = GetCreateConnection();
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+            try
             {
-                connection.Open();
-                using (var transaction = connection.BeginTransaction())
+                using (var command = connection.CreateCommand())
                 {
-                    try
+                    command.Transaction = transaction;
+
+                    foreach (var query in queries)
                     {
-                        using (var command = connection.CreateCommand())
+                        var output = GetOutputFromCache(query);
+                        if (output != null)
                         {
-                            foreach (var query in queries)
-                            {
-                                var output = GetOutputFromCache(query);
-                                if (output != null)
-                                {
-                                    RaiseCallbacks(query.Callbacks, output);
-                                    result.Add(output);
-                                }
-                                else
-                                {
-                                    switch (connection.State)
-                                    {
-                                        case ConnectionState.Closed:
-                                            connection.Open();
-                                            break;
-                                        case ConnectionState.Broken:
-                                            connection.Close();
-                                            connection.Open();
-                                            break;
-                                    }
-
-                                    QueryOutput queryOutput;
-                                    try
-                                    {
-                                        queryOutput = RunCommand(query, command);
-                                    }
-                                    catch (MySqlException ex)
-                                    {
-                                        if (ex.Message.Equals(Resources.Timeout, StringComparison.OrdinalIgnoreCase))
-                                            queryOutput = RunCommand(query, command);
-                                        else
-                                            throw;
-                                    }
-
-                                    result.Add(queryOutput);
-                                }
-                            }
+                            RaiseCallbacks(query.Callbacks, output);
+                            result.Add(output);
                         }
+                        else
+                        {
+                            switch (connection.State)
+                            {
+                                case ConnectionState.Closed:
+                                    connection.Open();
+                                    break;
+                                case ConnectionState.Broken:
+                                    connection.Close();
+                                    connection.Open();
+                                    break;
+                            }
 
-                        transaction.Commit();
-                    }
-                    catch (Exception)
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
-                    finally
-                    {
-                        connection.Close();
+                            var queryOutput = RunCommand(query, command);
+                            result.Add(queryOutput);
+                        }
                     }
                 }
+
+                transaction.Commit();
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                throw;
+            }
+            finally
+            {
+                connection.Close();
             }
 
             return result;
@@ -287,23 +321,24 @@ namespace Pustalorc.MySql.Data.Wrapper
         /// There is no output, as this is just a request.
         /// </summary>
         /// <param name="query">The query to update in the cache.</param>
-        public async Task RequestCacheUpdateAsync(Query query)
+        [UsedImplicitly]
+        public virtual async Task RequestCacheUpdateAsync(Query<T2> query)
         {
-            using (var connection = CreateConnection())
+            var connection = GetCreateConnection();
+            try
             {
-                try
-                {
-                    await connection.OpenAsync();
+                await connection.OpenAsync();
 
-                    using (var command = connection.CreateCommand())
-                    {
-                        await RunCommandAsync(query, command);
-                    }
-                }
-                finally
-                {
-                    await connection.CloseAsync();
-                }
+#if NETSTANDARD2_1
+                await using var command = connection.CreateCommand();
+#else
+                using var command = connection.CreateCommand();
+#endif
+                await RunCommandAsync(query, command);
+            }
+            finally
+            {
+                await connection.CloseAsync();
             }
         }
 
@@ -312,23 +347,20 @@ namespace Pustalorc.MySql.Data.Wrapper
         /// There is no output, as this is just a request.
         /// </summary>
         /// <param name="query">The query to update in the cache.</param>
-        public void RequestCacheUpdate(Query query)
+        [UsedImplicitly]
+        public virtual void RequestCacheUpdate(Query<T2> query)
         {
-            using (var connection = CreateConnection())
+            var connection = GetCreateConnection();
+            try
             {
-                try
-                {
-                    connection.Open();
+                connection.Open();
 
-                    using (var command = connection.CreateCommand())
-                    {
-                        RunCommand(query, command);
-                    }
-                }
-                finally
-                {
-                    connection.Close();
-                }
+                using var command = connection.CreateCommand();
+                RunCommand(query, command);
+            }
+            finally
+            {
+                connection.Close();
             }
         }
 
@@ -336,11 +368,12 @@ namespace Pustalorc.MySql.Data.Wrapper
         /// Updates the cache's refresh timer with a new interval.
         /// </summary>
         /// <param name="rate">The new rate (in ms) that the cache should be refreshed at.</param>
-        protected void ModifyCacheRefreshInterval(double rate)
+        [UsedImplicitly]
+        public virtual void ModifyCacheRefreshInterval(double rate)
         {
             if (!Configuration.UseCache) return;
 
-            m_CacheManager.ModifyCacheRefreshInterval(rate);
+            Cache.ModifyCacheRefreshInterval(rate);
         }
 
         /// <summary>
@@ -349,9 +382,9 @@ namespace Pustalorc.MySql.Data.Wrapper
         /// <param name="query">The query to be ran.</param>
         /// <param name="command">The command context to be used.</param>
         /// <returns>The output after the query gets executed.</returns>
-        private async Task<QueryOutput> RunCommandAsync(Query query, MySqlCommand command)
+        protected virtual async Task<QueryOutput<T2>> RunCommandAsync(Query<T2> query, MySqlCommand command)
         {
-            var queryOutput = new QueryOutput(query, null);
+            var queryOutput = new QueryOutput<T2>(query, null);
 
             command.CommandText = query.QueryString;
             command.Parameters.Clear();
@@ -368,7 +401,11 @@ namespace Pustalorc.MySql.Data.Wrapper
                 case EQueryType.Reader:
                     var readerResult = new List<Row>();
 
+#if NETSTANDARD2_1
+                    await using (var reader = await command.ExecuteReaderAsync())
+#else
                     using (var reader = await command.ExecuteReaderAsync())
+#endif
                     {
                         try
                         {
@@ -384,7 +421,11 @@ namespace Pustalorc.MySql.Data.Wrapper
                         }
                         finally
                         {
+#if NETSTANDARD2_1
+                            await reader.CloseAsync();
+#else
                             reader.Close();
+#endif
                         }
                     }
 
@@ -395,7 +436,7 @@ namespace Pustalorc.MySql.Data.Wrapper
             RaiseCallbacks(query.Callbacks, queryOutput);
 
             if (Configuration.UseCache && query.ShouldCache)
-                m_CacheManager.StoreUpdateItem(queryOutput);
+                Cache.StoreUpdateItem(queryOutput.Query.Key, queryOutput);
 
             return queryOutput;
         }
@@ -406,9 +447,9 @@ namespace Pustalorc.MySql.Data.Wrapper
         /// <param name="query">The query to be ran.</param>
         /// <param name="command">The command context to be used.</param>
         /// <returns>The output after the query gets executed.</returns>
-        private QueryOutput RunCommand(Query query, MySqlCommand command)
+        protected virtual QueryOutput<T2> RunCommand(Query<T2> query, MySqlCommand command)
         {
-            var queryOutput = new QueryOutput(query, null);
+            var queryOutput = new QueryOutput<T2>(query, null);
 
             command.CommandText = query.QueryString;
             command.Parameters.Clear();
@@ -452,7 +493,7 @@ namespace Pustalorc.MySql.Data.Wrapper
             RaiseCallbacks(query.Callbacks, queryOutput);
 
             if (Configuration.UseCache && query.ShouldCache)
-                m_CacheManager.StoreUpdateItem(queryOutput);
+                Cache.StoreUpdateItem(queryOutput.Query.Key, queryOutput);
 
             return queryOutput;
         }
@@ -462,13 +503,25 @@ namespace Pustalorc.MySql.Data.Wrapper
         /// </summary>
         /// <param name="query">The query with the unique identifier related to an element in cache.</param>
         /// <returns>Null if there is no output in the cache for this query, otherwise its a valid instance of the QueryOutput object.</returns>
-        private QueryOutput GetOutputFromCache(Query query)
+        [UsedImplicitly]
+        public virtual QueryOutput<T2>? GetOutputFromCache(Query<T2> query)
         {
-            if (!Configuration.UseCache || !query.ShouldCache) return null;
+            return !query.ShouldCache ? null : GetOutputFromCache(query.Key);
+        }
 
-            var cache = m_CacheManager.GetItemInCache(new QueryOutput(query, null));
+        /// <summary>
+        /// Retrieves a previously stored output of the query from cache.
+        /// </summary>
+        /// <param name="key">The key of an element in cache.</param>
+        /// <returns>Null if there is no output in the cache for this query, otherwise its a valid instance of the QueryOutput object.</returns>
+        [UsedImplicitly]
+        public virtual QueryOutput<T2>? GetOutputFromCache(T2 key)
+        {
+            if (!Configuration.UseCache) return null;
 
-            return cache?.Identifiable;
+            var cache = Cache.GetItemInCache(key);
+
+            return cache?.Item;
         }
 
         /// <summary>
@@ -476,7 +529,7 @@ namespace Pustalorc.MySql.Data.Wrapper
         /// </summary>
         /// <param name="callbacks">The callbacks to be raised.</param>
         /// <param name="output">The output to be passed to all the callbacks.</param>
-        private static void RaiseCallbacks(IEnumerable<QueryCallback> callbacks, QueryOutput output)
+        protected virtual void RaiseCallbacks(IEnumerable<Query<T2>.QueryCallback> callbacks, QueryOutput<T2> output)
         {
             foreach (var callback in callbacks)
                 callback?.Invoke(output);
@@ -486,10 +539,9 @@ namespace Pustalorc.MySql.Data.Wrapper
         /// Deals with the event raised by the cache to update the requested element. A single access to the identifiable is needed.
         /// </summary>
         /// <param name="item">The element in cache to update.</param>
-        /// <param name="identifiable">The inner identifiable of the previous item.</param>
-        private void CacheItemUpdateRequested(CachedItem<QueryOutput> item, ref QueryOutput identifiable)
+        private void CacheItemUpdateRequested(AccessCounter<QueryOutput<T2>> item)
         {
-            RequestCacheUpdate(identifiable.Query);
+            RequestCacheUpdate(item.Item.Query);
         }
     }
 }

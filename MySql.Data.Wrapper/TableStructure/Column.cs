@@ -1,21 +1,29 @@
+using JetBrains.Annotations;
+
 namespace Pustalorc.MySql.Data.Wrapper.TableStructure
 {
     /// <summary>
-    /// Defines a column of a table.
+    /// Defining a column for a row in a table.
     /// </summary>
-    public sealed class Column
+    [UsedImplicitly]
+    public class Column
     {
         /// <summary>
-        /// The name of the column in question.
+        /// The name of the column.
         /// </summary>
         public readonly string Name;
 
         /// <summary>
-        /// The value (if any) of this column for the first or the defined row.
+        /// The value in the column.
         /// </summary>
-        public readonly object Value;
+        [UsedImplicitly] public readonly object? Value;
 
-        public Column(string name, object value)
+        /// <summary>
+        /// Constructs a new instance.
+        /// </summary>
+        /// <param name="name">The name of the column.</param>
+        /// <param name="value">The value in the column.</param>
+        public Column(string name, object? value)
         {
             Name = name;
             Value = value;

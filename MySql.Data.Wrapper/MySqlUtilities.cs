@@ -3,16 +3,16 @@ using System;
 namespace Pustalorc.MySql.Data.Wrapper
 {
     /// <summary>
-    /// Utilities to deal with MySql and logging to console.
+    /// Utilities to deal with special things in MySql
     /// </summary>
     public static class MySqlUtilities
     {
         /// <summary>
-        /// Transforms the input into a valid encapsulated value that can be safely used in a MySql query.
+        /// Transforms the input into a valid encapsulated value that can be safely used in a MySql connection string.
         /// </summary>
         /// <param name="input">The value to encapsulate.</param>
         /// <returns>The input but encapsulated.</returns>
-        public static string ToSafeValue(string input)
+        public static string ToSafeConnectionStringValue(string input)
         {
             if (!input.Contains(";") && !input.Contains("'") && !input.Contains("\"")) return input;
 
