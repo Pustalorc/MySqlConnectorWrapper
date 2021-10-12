@@ -14,10 +14,9 @@
     <RepositoryUrl>https://github.com/Pustalorc/MySqlConnectorWrapper</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageTags>MySql MySql.Data Connector Wrapper Caching</PackageTags>
-    <PackageReleaseNotes>Update to MySql.Data 8.0.26
-Update to Pustalorc.FrequencyCache 1.2.0</PackageReleaseNotes>
+    <PackageReleaseNotes>Changed open/close calls to validation calls.</PackageReleaseNotes>
     <PackageId>Pustalorc.MySqlConnectorWrapper</PackageId>
-    <PackageVersion>3.0.0-MySqlData</PackageVersion>
+    <PackageVersion>3.0.1-MySqlData</PackageVersion>
     <Product>Pustalorc.MySqlConnectorWrapper</Product>
     <LangVersion>latestmajor</LangVersion>
     <Nullable>enable</Nullable>

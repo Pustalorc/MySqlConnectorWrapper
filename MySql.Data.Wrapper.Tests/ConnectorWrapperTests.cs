@@ -58,6 +58,23 @@ namespace Pustalorc.MySql.Data.Wrapper.Tests
         }
 
         [TestMethod]
+        public void NestedQueryTest()
+        {
+            var output = m_Database.ExecuteQuery(m_Database.CreateQuery("SHOW TABLE", "SHOW TABLES LIKE 'test';", EQueryType.Scalar, callbacks: new Query<string>.QueryCallback[]
+            {
+                o =>
+                {
+                    if (o.Output is true) return;
+
+                    m_Database.CreateQuery("CREATE TABLE", "CREATE TABLE `test` (`id` VARCHAR(5) NOT NULL);", EQueryType.NonQuery);
+                    o.Output = true;
+                }
+            }));
+
+            Assert.IsTrue(output.Output is true);
+        }
+
+        [TestMethod]
         public void MultiThreadTest()
         {
             var manualReset = new ManualResetEvent(false);

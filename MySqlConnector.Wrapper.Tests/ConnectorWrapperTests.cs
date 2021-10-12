@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.VisualStudio.TestTools.UnitTesting.Logging;
@@ -55,6 +57,23 @@ namespace Pustalorc.MySqlConnector.Wrapper.Tests
                 m_Database.CreateQuery("DROP TABLE", "DROP TABLE `test3`;", EQueryType.NonQuery));
 
             Assert.IsTrue(allOut.All(k => k.Output != null));
+        }
+
+        [TestMethod]
+        public void NestedQueryTest()
+        {
+            var output = m_Database.ExecuteQuery(m_Database.CreateQuery("SHOW TABLE", "SHOW TABLES LIKE 'test';", EQueryType.Scalar, callbacks: new Query<string>.QueryCallback[]
+            {
+                o =>
+                {
+                    if (o.Output is true) return;
+
+                    m_Database.CreateQuery("CREATE TABLE", "CREATE TABLE `test` (`id` VARCHAR(5) NOT NULL);", EQueryType.NonQuery);
+                    o.Output = true;
+                }
+            }));
+
+            Assert.IsTrue(output.Output is true);
         }
 
         [TestMethod]

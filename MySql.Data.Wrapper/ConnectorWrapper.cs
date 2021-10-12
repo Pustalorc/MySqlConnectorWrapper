@@ -92,7 +92,7 @@ namespace Pustalorc.MySql.Data.Wrapper
             exception = null;
             try
             {
-                connection.Open();
+                SafeOpenConnection(connection);
                 return true;
             }
             catch (Exception ex)
@@ -102,8 +102,60 @@ namespace Pustalorc.MySql.Data.Wrapper
             }
             finally
             {
-                connection.Close();
+                SafeCloseConnection(connection);
             }
+        }
+
+        /// <summary>
+        /// Opens a connection without throwing an error if the connection is already open.
+        /// </summary>
+        /// <param name="connection">The connection to open.</param>
+        /// <remarks>
+        /// If the connection is broken or fails entirely, this should still throw an exception.
+        /// </remarks>
+        protected virtual void SafeOpenConnection(MySqlConnection connection)
+        {
+            if (connection.State != ConnectionState.Open)
+                connection.Open();
+        }
+
+        /// <summary>
+        /// Closes a connection without throwing an error if the connection is already closed.
+        /// </summary>
+        /// <param name="connection">The connection to close.</param>
+        /// <remarks>
+        /// If the connection is broken or fails entirely, this should still throw an exception.
+        /// </remarks>
+        protected virtual void SafeCloseConnection(MySqlConnection connection)
+        {
+            if (connection.State != ConnectionState.Closed)
+                connection.Close();
+        }
+
+        /// <summary>
+        /// Opens a connection without throwing an error if the connection is already open.
+        /// </summary>
+        /// <param name="connection">The connection to open.</param>
+        /// <remarks>
+        /// If the connection is broken or fails entirely, this should still throw an exception.
+        /// </remarks>
+        protected virtual async Task SafeOpenConnectionAsync(MySqlConnection connection)
+        {
+            if (connection.State != ConnectionState.Open)
+                await connection.OpenAsync();
+        }
+
+        /// <summary>
+        /// Closes a connection without throwing an error if the connection is already closed.
+        /// </summary>
+        /// <param name="connection">The connection to close.</param>
+        /// <remarks>
+        /// If the connection is broken or fails entirely, this should still throw an exception.
+        /// </remarks>
+        protected virtual async Task SafeCloseConnectionAsync(MySqlConnection connection)
+        {
+            if (connection.State != ConnectionState.Closed)
+                await connection.CloseAsync();
         }
 
         /// <summary>
@@ -141,7 +193,7 @@ namespace Pustalorc.MySql.Data.Wrapper
             var connection = GetCreateConnection();
             try
             {
-                await connection.OpenAsync();
+                await SafeOpenConnectionAsync(connection);
 
 #if NETSTANDARD2_1
                 await using var command = connection.CreateCommand();
@@ -152,7 +204,7 @@ namespace Pustalorc.MySql.Data.Wrapper
             }
             finally
             {
-                await connection.CloseAsync();
+                await SafeCloseConnectionAsync(connection);
             }
         }
 
@@ -174,14 +226,13 @@ namespace Pustalorc.MySql.Data.Wrapper
             var connection = GetCreateConnection();
             try
             {
-                connection.Open();
-
+                SafeOpenConnection(connection);
                 using var command = connection.CreateCommand();
                 return RunCommand(query, command);
             }
             finally
             {
-                connection.Close();
+                SafeCloseConnection(connection);
             }
         }
 
@@ -197,7 +248,7 @@ namespace Pustalorc.MySql.Data.Wrapper
             var result = new List<QueryOutput<T2>>();
 
             var connection = GetCreateConnection();
-            await connection.OpenAsync();
+            await SafeOpenConnectionAsync(connection);
 #if NETSTANDARD2_1
             await using var transaction = await connection.BeginTransactionAsync();
 #else
@@ -225,11 +276,11 @@ namespace Pustalorc.MySql.Data.Wrapper
                             switch (connection.State)
                             {
                                 case ConnectionState.Closed:
-                                    await connection.OpenAsync();
+                                    await SafeOpenConnectionAsync(connection);
                                     break;
                                 case ConnectionState.Broken:
-                                    await connection.CloseAsync();
-                                    await connection.OpenAsync();
+                                    await SafeCloseConnectionAsync(connection);
+                                    await SafeOpenConnectionAsync(connection);
                                     break;
                             }
 
@@ -239,16 +290,18 @@ namespace Pustalorc.MySql.Data.Wrapper
                     }
                 }
 
+                await SafeOpenConnectionAsync(connection);
                 transaction.Commit();
             }
             catch (Exception)
             {
+                await SafeOpenConnectionAsync(connection);
                 transaction.Rollback();
                 throw;
             }
             finally
             {
-                await connection.CloseAsync();
+                await SafeCloseConnectionAsync(connection);
             }
 
             return result;
@@ -266,7 +319,7 @@ namespace Pustalorc.MySql.Data.Wrapper
             var result = new List<QueryOutput<T2>>();
 
             var connection = GetCreateConnection();
-            connection.Open();
+            SafeOpenConnection(connection);
             using var transaction = connection.BeginTransaction();
             try
             {
@@ -287,11 +340,11 @@ namespace Pustalorc.MySql.Data.Wrapper
                             switch (connection.State)
                             {
                                 case ConnectionState.Closed:
-                                    connection.Open();
+                                    SafeOpenConnection(connection);
                                     break;
                                 case ConnectionState.Broken:
-                                    connection.Close();
-                                    connection.Open();
+                                    SafeCloseConnection(connection);
+                                    SafeOpenConnection(connection);
                                     break;
                             }
 
@@ -301,16 +354,18 @@ namespace Pustalorc.MySql.Data.Wrapper
                     }
                 }
 
+                SafeOpenConnection(connection);
                 transaction.Commit();
             }
             catch (Exception)
             {
+                SafeOpenConnection(connection);
                 transaction.Rollback();
                 throw;
             }
             finally
             {
-                connection.Close();
+                SafeCloseConnection(connection);
             }
 
             return result;
@@ -327,7 +382,7 @@ namespace Pustalorc.MySql.Data.Wrapper
             var connection = GetCreateConnection();
             try
             {
-                await connection.OpenAsync();
+                await SafeOpenConnectionAsync(connection);
 
 #if NETSTANDARD2_1
                 await using var command = connection.CreateCommand();
@@ -338,7 +393,7 @@ namespace Pustalorc.MySql.Data.Wrapper
             }
             finally
             {
-                await connection.CloseAsync();
+                await SafeCloseConnectionAsync(connection);
             }
         }
 
@@ -353,14 +408,13 @@ namespace Pustalorc.MySql.Data.Wrapper
             var connection = GetCreateConnection();
             try
             {
-                connection.Open();
-
+                SafeOpenConnection(connection);
                 using var command = connection.CreateCommand();
                 RunCommand(query, command);
             }
             finally
             {
-                connection.Close();
+                SafeCloseConnection(connection);
             }
         }
 
