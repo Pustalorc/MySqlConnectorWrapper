@@ -1,23 +1,22 @@
-namespace Pustalorc.MySql.Data.Wrapper.Queries
+namespace Pustalorc.MySql.Data.Wrapper.Queries;
+
+/// <summary>
+/// The possible types of queries.
+/// </summary>
+public enum EQueryType
 {
     /// <summary>
-    /// The possible types of queries.
+    /// A query that requires a single output value. Eg: SELECT `Column` FROM
     /// </summary>
-    public enum EQueryType
-    {
-        /// <summary>
-        /// A query that requires a single output value. Eg: SELECT `Column` FROM
-        /// </summary>
-        Scalar,
+    Scalar,
 
-        /// <summary>
-        /// A query that does not expect an output value (other than the number of affected rows). Eg: INSERT INTO
-        /// </summary>
-        NonQuery,
+    /// <summary>
+    /// A query that does not expect an output value (other than the number of affected rows). Eg: INSERT INTO
+    /// </summary>
+    NonQuery,
 
-        /// <summary>
-        /// A Query that requires multiple output values. Eg: SELECT * FROM
-        /// </summary>
-        Reader
-    }
+    /// <summary>
+    /// A Query that requires multiple output values. Eg: SELECT * FROM
+    /// </summary>
+    Reader
 }
