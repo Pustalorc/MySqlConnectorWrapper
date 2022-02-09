@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Pustalorc.MySqlDatabaseWrapper.DatabaseTypes.Execution;
+using Pustalorc.MySqlDatabaseWrapper.Implementations;
 using Xunit;
 
 namespace Pustalorc.MySqlDatabaseWrapper.Tests;
 
 public sealed class MySqlDataDatabaseTests
 {
-    private MySqlDataDatabase<DefaultConnectorConfiguration, string> Database { get; } =
+    private MySqlDataWrapper<DefaultConnectorConfiguration, string> Database { get; } =
         new(new DefaultConnectorConfiguration(), StringComparer.OrdinalIgnoreCase);
 
     [Fact]
@@ -68,7 +69,7 @@ public sealed class MySqlDataDatabaseTests
     public void NestedQueryInQueryTest()
     {
         var output = Database.ExecuteQuery("SHOW TABLE", new Query("SHOW TABLES LIKE 'test';",
-            EQueryType.Scalar, mySqlDataCallback: (queryOutput, connection) =>
+            EQueryType.Scalar, callback: (queryOutput, connection) =>
             {
                 if (queryOutput.Result is string result &&
                     string.Equals("test", result, StringComparison.OrdinalIgnoreCase))
@@ -94,7 +95,7 @@ public sealed class MySqlDataDatabaseTests
     public void NestedTransactionInQueryTest()
     {
         var output = Database.ExecuteQuery("CREATE TABLE", new Query("CREATE TABLE `test` (`id` VARCHAR(5) NOT NULL);",
-            mySqlDataCallback: (queryOutput, connection) =>
+            callback: (queryOutput, connection) =>
             {
                 Database.ExecuteTransactionWithOpenConnection(connection,
                     new KeyValuePair<string, Query>("INSERT 1", new Query("INSERT INTO `test` (`id`) VALUES('one')")),

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using JetBrains.Annotations;
 using MySql.Data.MySqlClient;
 
@@ -12,19 +13,15 @@ public class Query
     public EQueryType Type { get; }
     public bool ShouldCache { get; }
     public IEnumerable<MySqlParameter> Parameters { get; }
-    public Action<QueryOutput, MySqlConnection>? MySqlDataCallback { get; }
-    public Action<QueryOutput, MySqlConnector.MySqlConnection>? MySqlConnectorCallback { get; }
+    public Action<QueryOutput, DbConnection>? Callback { get; }
 
     public Query(string queryString, EQueryType type = EQueryType.NonQuery, bool shouldCache = false,
-        Action<QueryOutput, MySqlConnection>? mySqlDataCallback = null,
-        Action<QueryOutput, MySqlConnector.MySqlConnection>? mySqlConnectorCallback = null,
-        params MySqlParameter[] parameters)
+        Action<QueryOutput, DbConnection>? callback = null, params MySqlParameter[] parameters)
     {
         QueryString = queryString;
         Type = type;
         ShouldCache = shouldCache;
         Parameters = parameters;
-        MySqlDataCallback = mySqlDataCallback;
-        MySqlConnectorCallback = mySqlConnectorCallback;
+        Callback = callback;
     }
 }

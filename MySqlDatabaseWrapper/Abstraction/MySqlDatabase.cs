@@ -1,36 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using JetBrains.Annotations;
-using MySql.Data.MySqlClient;
 using Pustalorc.Libraries.FrequencyCache;
 using Pustalorc.MySqlDatabaseWrapper.Configuration;
 using Pustalorc.MySqlDatabaseWrapper.DatabaseTypes.Execution;
 using Pustalorc.MySqlDatabaseWrapper.DatabaseTypes.ResultTable;
 
-namespace Pustalorc.MySqlDatabaseWrapper;
+namespace Pustalorc.MySqlDatabaseWrapper.Abstraction;
 
-[UsedImplicitly]
-public class MySqlDataDatabase<T1, T2> : IDisposable where T1 : IConnectorConfiguration where T2 : class
+public abstract class MySqlDatabaseWrapper<T1, T2> : IDisposable where T1 : IConnectorConfiguration where T2 : class
 {
-    public T1 Configuration { get; set; }
+    public T1 Configuration { get; protected set; }
 
     protected Cache<QueryOutput, T2>? Cache { get; set; }
     protected string ConnectionString { get; set; }
     protected IEqualityComparer<T2> Comparer { get; }
 
-    public MySqlDataDatabase(T1 configuration, IEqualityComparer<T2> comparer)
+    protected MySqlDatabaseWrapper(T1 configuration, IEqualityComparer<T2> comparer, DbConnectionStringBuilder connectionStringBuilder)
     {
         Comparer = comparer;
         Configuration = configuration;
-        ConnectionString = new MySqlConnectionStringBuilder(configuration.ConnectionString)
-        {
-            Server = configuration.MySqlServerAddress,
-            Port = configuration.MySqlServerPort,
-            Database = configuration.DatabaseName,
-            UserID = configuration.DatabaseUsername,
-            Password = configuration.DatabasePassword
-        }.GetConnectionString(true);
+        ConnectionString = connectionStringBuilder.ConnectionString;
 
         if (!configuration.UseCache)
             return;
@@ -49,14 +41,7 @@ public class MySqlDataDatabase<T1, T2> : IDisposable where T1 : IConnectorConfig
     public virtual void ReloadConfiguration(T1 configuration)
     {
         Configuration = configuration;
-        ConnectionString = new MySqlConnectionStringBuilder(configuration.ConnectionString)
-        {
-            Server = configuration.MySqlServerAddress,
-            Port = configuration.MySqlServerPort,
-            Database = configuration.DatabaseName,
-            UserID = configuration.DatabaseUsername,
-            Password = configuration.DatabasePassword
-        }.GetConnectionString(true);
+        ConnectionString = GetConnectionStringBuilder().ConnectionString;
 
         if (configuration.UseCache)
         {
@@ -75,7 +60,28 @@ public class MySqlDataDatabase<T1, T2> : IDisposable where T1 : IConnectorConfig
         }
     }
 
-    // Queries
+    [UsedImplicitly]
+    public virtual bool TestConnection(out Exception? exception)
+    {
+        using var connection = GetConnection();
+        exception = null;
+        try
+        {
+            connection.Open();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            exception = ex;
+            return false;
+        }
+    }
+
+    protected abstract DbConnectionStringBuilder GetConnectionStringBuilder();
+
+    protected abstract DbConnection GetConnection();
+
+    // Query execution
 
     [UsedImplicitly]
     public virtual QueryOutput ExecuteQuery(T2 key, Query query, bool checkCache = true)
@@ -88,7 +94,7 @@ public class MySqlDataDatabase<T1, T2> : IDisposable where T1 : IConnectorConfig
                 return cachedOutput;
         }
 
-        using var connection = new MySqlConnection(ConnectionString);
+        using var connection = GetConnection();
         connection.Open();
 
         var result = ExecuteQueryInternal(connection, query);
@@ -100,8 +106,7 @@ public class MySqlDataDatabase<T1, T2> : IDisposable where T1 : IConnectorConfig
     }
 
     [UsedImplicitly]
-    public virtual QueryOutput ExecuteQueryWithOpenConnection(MySqlConnection connection, T2 key, Query query,
-        MySqlTransaction? transaction = null, bool checkCache = true)
+    public virtual QueryOutput ExecuteQueryWithOpenConnection(DbConnection connection, T2 key, Query query, DbTransaction? transaction = null, bool checkCache = true)
     {
         if (checkCache)
         {
@@ -119,8 +124,7 @@ public class MySqlDataDatabase<T1, T2> : IDisposable where T1 : IConnectorConfig
         return result;
     }
 
-    protected virtual QueryOutput ExecuteQueryInternal(MySqlConnection connection, Query query,
-        MySqlTransaction? transaction = null)
+    protected virtual QueryOutput ExecuteQueryInternal(DbConnection connection, Query query, DbTransaction? transaction = null)
     {
         using var command = connection.CreateCommand();
 
@@ -169,24 +173,23 @@ public class MySqlDataDatabase<T1, T2> : IDisposable where T1 : IConnectorConfig
         }
 
         var constructedOutput = new QueryOutput(query, output);
-        query.MySqlDataCallback?.Invoke(constructedOutput, connection);
+        query.Callback?.Invoke(constructedOutput, connection);
         return constructedOutput;
     }
 
-    // Transactions
+    // Transaction execution
 
     [UsedImplicitly]
     public virtual List<QueryOutput> ExecuteTransaction(params KeyValuePair<T2, Query>[] queries)
     {
-        using var connection = new MySqlConnection(ConnectionString);
+        using var connection = GetConnection();
         connection.Open();
 
         return ExecuteTransactionWithOpenConnection(connection, queries);
     }
 
     [UsedImplicitly]
-    public virtual List<QueryOutput> ExecuteTransactionWithOpenConnection(MySqlConnection connection,
-        params KeyValuePair<T2, Query>[] queries)
+    public virtual List<QueryOutput> ExecuteTransactionWithOpenConnection(DbConnection connection, params KeyValuePair<T2, Query>[] queries)
     {
         using var transaction = connection.BeginTransaction();
 
@@ -207,7 +210,7 @@ public class MySqlDataDatabase<T1, T2> : IDisposable where T1 : IConnectorConfig
         }
     }
 
-    // Cache handling.
+    // Cache accessing
 
     [UsedImplicitly]
     public virtual QueryOutput? GetOutputFromCache(T2 key)
