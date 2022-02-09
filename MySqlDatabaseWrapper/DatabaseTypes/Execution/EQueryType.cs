@@ -1,4 +1,4 @@
-namespace Pustalorc.MySql.Data.Wrapper.Queries;
+﻿namespace Pustalorc.MySqlDatabaseWrapper.DatabaseTypes.Execution;
 
 /// <summary>
 /// The possible types of queries.

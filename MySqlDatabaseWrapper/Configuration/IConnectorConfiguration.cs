@@ -1,6 +1,6 @@
 using Pustalorc.Libraries.FrequencyCache.Interfaces;
 
-namespace Pustalorc.MySql.Data.Wrapper.Configuration;
+namespace Pustalorc.MySqlDatabaseWrapper.Configuration;
 
 /// <summary>
 /// Basic configuration required for the connector to work properly.
@@ -8,19 +8,14 @@ namespace Pustalorc.MySql.Data.Wrapper.Configuration;
 public interface IConnectorConfiguration : ICacheConfiguration
 {
     /// <summary>
-    /// The format of the connection string. May include extras to it.
-    /// </summary>
-    public string ConnectionStringFormat { get; }
-
-    /// <summary>
     /// The address (IP or Domain Name) of the database.
     /// </summary>
-    public string DatabaseAddress { get; }
+    public string MySqlServerAddress { get; }
 
     /// <summary>
     /// The port of the database (3306 by default).
     /// </summary>
-    public ushort DatabasePort { get; }
+    public ushort MySqlServerPort { get; }
 
     /// <summary>
     /// The username for read (and maybe write) access to the database.
@@ -36,6 +31,11 @@ public interface IConnectorConfiguration : ICacheConfiguration
     /// The name of the database where main data should be stored at.
     /// </summary>
     public string DatabaseName { get; }
+
+    /// <summary>
+    /// The connection string used on the string builder. Used to include extra options not exposed by default.
+    /// </summary>
+    public string ConnectionString { get; }
 
     /// <summary>
     /// If set to true, any read queries will also be cached and updated once in a while.

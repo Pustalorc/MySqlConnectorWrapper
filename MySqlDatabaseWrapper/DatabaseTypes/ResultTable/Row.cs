@@ -1,9 +1,9 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using JetBrains.Annotations;
 
-namespace Pustalorc.MySqlConnector.Wrapper.TableStructure;
+namespace Pustalorc.MySqlDatabaseWrapper.DatabaseTypes.ResultTable;
 
 /// <summary>
 /// Defines a row in a table.

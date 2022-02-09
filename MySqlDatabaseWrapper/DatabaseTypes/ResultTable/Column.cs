@@ -1,6 +1,6 @@
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 
-namespace Pustalorc.MySqlConnector.Wrapper.TableStructure;
+namespace Pustalorc.MySqlDatabaseWrapper.DatabaseTypes.ResultTable;
 
 /// <summary>
 /// Defining a column for a row in a table.

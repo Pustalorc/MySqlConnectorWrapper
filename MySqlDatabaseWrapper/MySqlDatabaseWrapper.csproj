@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net461;net48;net6.0;netstandard2.0;netstandard2.1</TargetFrameworks>
+        <AssemblyName>Pustalorc.MySqlDatabaseWrapper</AssemblyName>
+        <RootNamespace>Pustalorc.MySqlDatabaseWrapper</RootNamespace>
+        <Version>3.0.2</Version>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Authors>Pustalorc</Authors>
+        <Description>Library that wraps Connector/NET and MySqlConnector in order to reduce duplicate code when interacting with either connector.</Description>
+        <Copyright>Copyright © 2020-2022 Pustalorc</Copyright>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl></PackageProjectUrl>
+        <RepositoryUrl>https://github.com/Pustalorc/MySqlConnectorWrapper</RepositoryUrl>
+        <RepositoryType>Github</RepositoryType>
+        <PackageTags>MySql MySql.Data MySqlConnector Connector Wrapper Caching</PackageTags>
+        <PackageReleaseNotes>Preview build - Major changes done, multiple classes removed, collapsed both libraries into 1, and currently removed asynchronous methods.</PackageReleaseNotes>
+        <PackageId>Pustalorc.MySqlConnectorWrapper</PackageId>
+        <PackageVersion>4.0.0-preview.1</PackageVersion>
+        <Product>Pustalorc.MySqlConnectorWrapper</Product>
+        <LangVersion>10</LangVersion>
+        <Nullable>enable</Nullable>
+        <AssemblyVersion>4.0.0</AssemblyVersion>
+        <FileVersion>4.0.0</FileVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <DocumentationFile>bin\Release\MySqlDatabaseWrapper.xml</DocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="MySql.Data" Version="8.0.28" />
+        <PackageReference Include="MySqlConnector" Version="2.1.5" />
+        <PackageReference Include="Pustalorc.FrequencyCache" Version="2.0.0" />
+    </ItemGroup>
+
+</Project>
