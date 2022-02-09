@@ -1,16 +1,16 @@
-﻿using System.Collections.Generic;
-using System.Data.Common;
+﻿using System.Data.Common;
 using JetBrains.Annotations;
-using MySqlConnector;
+using MySql.Data.MySqlClient;
 using Pustalorc.MySqlDatabaseWrapper.Abstraction;
 using Pustalorc.MySqlDatabaseWrapper.Configuration;
 
 namespace Pustalorc.MySqlDatabaseWrapper.Implementations;
 
 [UsedImplicitly]
-public class MySqlConnectorWrapper<T1, T2> : MySqlDatabaseWrapper<T1, T2> where T1 : IConnectorConfiguration where T2 : class
+public class MySqlDataWrapper<TConnectorConfiguration> : DatabaseConnectorWrapper<TConnectorConfiguration>
+    where TConnectorConfiguration : IConnectorConfiguration
 {
-    public MySqlConnectorWrapper(T1 configuration, IEqualityComparer<T2> comparer) : base(configuration, comparer,
+    public MySqlDataWrapper(TConnectorConfiguration configuration) : base(configuration,
         new MySqlConnectionStringBuilder(configuration.ConnectionString)
         {
             Server = configuration.MySqlServerAddress, Port = configuration.MySqlServerPort,
@@ -24,8 +24,10 @@ public class MySqlConnectorWrapper<T1, T2> : MySqlDatabaseWrapper<T1, T2> where 
     {
         return new MySqlConnectionStringBuilder(Configuration.ConnectionString)
         {
-            Server = Configuration.MySqlServerAddress, Port = Configuration.MySqlServerPort,
-            Database = Configuration.DatabaseName, UserID = Configuration.DatabaseUsername,
+            Server = Configuration.MySqlServerAddress,
+            Port = Configuration.MySqlServerPort,
+            Database = Configuration.DatabaseName,
+            UserID = Configuration.DatabaseUsername,
             Password = Configuration.DatabasePassword
         };
     }

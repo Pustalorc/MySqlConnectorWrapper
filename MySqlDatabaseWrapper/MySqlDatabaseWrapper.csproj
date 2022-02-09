@@ -13,10 +13,10 @@
         <PackageProjectUrl></PackageProjectUrl>
         <RepositoryUrl>https://github.com/Pustalorc/MySqlConnectorWrapper</RepositoryUrl>
         <RepositoryType>Github</RepositoryType>
-        <PackageTags>MySql MySql.Data MySqlConnector Connector Wrapper Caching</PackageTags>
-        <PackageReleaseNotes>Preview build - Major changes done, multiple classes removed, collapsed both libraries into 1, and currently removed asynchronous methods.</PackageReleaseNotes>
+        <PackageTags>MySql MySql.Data MySqlConnector Connector Wrapper</PackageTags>
+        <PackageReleaseNotes>Removed caching from the library. Caching can be safely and more easily and cleanly handled outside of this library.</PackageReleaseNotes>
         <PackageId>Pustalorc.MySqlConnectorWrapper</PackageId>
-        <PackageVersion>4.0.0-beta.2</PackageVersion>
+        <PackageVersion>4.0.0-beta.3</PackageVersion>
         <Product>Pustalorc.MySqlConnectorWrapper</Product>
         <LangVersion>10</LangVersion>
         <Nullable>enable</Nullable>
@@ -29,9 +29,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="MySql.Data" Version="8.0.28" />
-        <PackageReference Include="MySqlConnector" Version="2.1.5" />
-        <PackageReference Include="Pustalorc.FrequencyCache" Version="2.0.0" />
+        <PackageReference Include="JetBrains.Annotations" Version="2021.3.0"/>
+        <PackageReference Include="MySql.Data" Version="8.0.28"/>
+        <PackageReference Include="MySqlConnector" Version="2.1.5"/>
     </ItemGroup>
 
 </Project>

@@ -1,11 +1,9 @@
-using Pustalorc.Libraries.FrequencyCache.Interfaces;
-
 namespace Pustalorc.MySqlDatabaseWrapper.Configuration;
 
 /// <summary>
 /// Basic configuration required for the connector to work properly.
 /// </summary>
-public interface IConnectorConfiguration : ICacheConfiguration
+public interface IConnectorConfiguration
 {
     /// <summary>
     /// The address (IP or Domain Name) of the database.
@@ -36,9 +34,4 @@ public interface IConnectorConfiguration : ICacheConfiguration
     /// The connection string used on the string builder. Used to include extra options not exposed by default.
     /// </summary>
     public string ConnectionString { get; }
-
-    /// <summary>
-    /// If set to true, any read queries will also be cached and updated once in a while.
-    /// </summary>
-    public bool UseCache { get; }
 }
