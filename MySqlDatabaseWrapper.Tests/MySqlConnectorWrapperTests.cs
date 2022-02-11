@@ -17,12 +17,10 @@ public sealed class MySqlConnectorWrapperTests
     public void CreateDropTableTest()
     {
         var output = Database.ExecuteQuery("CREATE TABLE `test` (`id` VARCHAR(5) NOT NULL);");
-
-        Assert.True(output.Result is 0);
+        Assert.True(output.GetNonQueryResult() == 0);
 
         output = Database.ExecuteQuery("DROP TABLE `test`;");
-
-        Assert.True(output.Result is 0);
+        Assert.True(output.GetNonQueryResult() == 0);
     }
 
     [Fact]
@@ -33,9 +31,7 @@ public sealed class MySqlConnectorWrapperTests
         var output = Database.ExecuteQuery("SHOW TABLES LIKE 'test';", EQueryType.Scalar);
 
         Database.ExecuteQuery("DROP TABLE `test`;");
-
-        Assert.True(
-            output.Result != null && "test".Equals(output.Result.ToString(), StringComparison.OrdinalIgnoreCase));
+        Assert.True(string.Equals(output.GetTFromResult<string>(), "test", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -52,7 +48,7 @@ public sealed class MySqlConnectorWrapperTests
         Database.ExecuteTransaction(new Query("DROP TABLE `test`;"), new Query("DROP TABLE `test2`;"),
             new Query("DROP TABLE `test3`;"));
 
-        Assert.True(allOut.All(k => k.Result != null));
+        Assert.True(allOut.All(k => !k.IsResultNull()));
     }
 
     [Fact]
@@ -62,13 +58,12 @@ public sealed class MySqlConnectorWrapperTests
             Database.ExecuteQuery("SHOW TABLES LIKE 'test';", EQueryType.Scalar, NestedQueryInQueryTestCallback);
 
         Database.ExecuteQuery("DROP TABLE `test`;");
-        Assert.True(output.Result is true);
+        Assert.True(output.GetTFromResult(false));
     }
 
     private void NestedQueryInQueryTestCallback(QueryOutput output, DbConnection connection, DbTransaction? transaction)
     {
-        if (output.Result is string result &&
-            string.Equals("test", result, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(output.GetTFromResult<string>(), "test", StringComparison.OrdinalIgnoreCase))
         {
             output.Result = true;
             return;
@@ -77,12 +72,12 @@ public sealed class MySqlConnectorWrapperTests
         Database.ExecuteQueryWithOpenConnection(connection, transaction,
             "CREATE TABLE `test` (`id` VARCHAR(5) NOT NULL);");
 
-        var secondaryOutput = Database
-            .ExecuteQueryWithOpenConnection(connection, transaction, "SHOW TABLES LIKE 'test';", EQueryType.Scalar)
-            .Result;
+        var secondaryOutput =
+            Database.ExecuteQueryWithOpenConnection(connection, transaction, "SHOW TABLES LIKE 'test';",
+                EQueryType.Scalar);
 
-        output.Result = secondaryOutput is string secondaryResult &&
-                        string.Equals("test", secondaryResult, StringComparison.OrdinalIgnoreCase);
+        output.Result = string.Equals("test", secondaryOutput.GetTFromResult<string>(),
+            StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -92,7 +87,7 @@ public sealed class MySqlConnectorWrapperTests
             callback: NestedTransactionInQueryTestCallback);
 
         Database.ExecuteQuery("DROP TABLE `test`;");
-        Assert.True(output.Result is true);
+        Assert.True(output.GetTFromResult(false));
     }
 
     private void NestedTransactionInQueryTestCallback(QueryOutput queryOutput, DbConnection connection,
@@ -107,7 +102,7 @@ public sealed class MySqlConnectorWrapperTests
         var output = Database.ExecuteQueryWithOpenConnection(connection, transaction, "SELECT COUNT(*) FROM `test`;",
             EQueryType.Scalar);
 
-        queryOutput.Result = output.Result is 5L;
+        queryOutput.Result = output.GetTFromResult(long.MaxValue) == 5;
     }
 
     [Fact]

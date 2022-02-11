@@ -6,10 +6,15 @@ using Pustalorc.MySqlDatabaseWrapper.Configuration;
 
 namespace Pustalorc.MySqlDatabaseWrapper.Implementations;
 
+/// <inheritdoc />
+/// <summary>
+/// A wrapper for MySql.Data v8.0.28
+/// </summary>
 [UsedImplicitly]
 public class MySqlDataWrapper<TConnectorConfiguration> : DatabaseConnectorWrapper<TConnectorConfiguration>
     where TConnectorConfiguration : IConnectorConfiguration
 {
+    /// <inheritdoc />
     public MySqlDataWrapper(TConnectorConfiguration configuration) : base(configuration,
         new MySqlConnectionStringBuilder(configuration.ConnectionString)
         {
@@ -20,6 +25,7 @@ public class MySqlDataWrapper<TConnectorConfiguration> : DatabaseConnectorWrappe
     {
     }
 
+    /// <inheritdoc />
     protected override DbConnectionStringBuilder GetConnectionStringBuilder()
     {
         return new MySqlConnectionStringBuilder(Configuration.ConnectionString)
@@ -32,6 +38,7 @@ public class MySqlDataWrapper<TConnectorConfiguration> : DatabaseConnectorWrappe
         };
     }
 
+    /// <inheritdoc />
     protected override DbConnection GetConnection()
     {
         return new MySqlConnection(ConnectionString);
