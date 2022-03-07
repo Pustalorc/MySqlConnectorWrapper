@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net461;net48;net6.0;netstandard2.0;netstandard2.1</TargetFrameworks>
+        <TargetFrameworks>net461;net48;net5.0;net6.0;netstandard2.0;netstandard2.1</TargetFrameworks>
         <AssemblyName>Pustalorc.MySqlDatabaseWrapper</AssemblyName>
         <RootNamespace>Pustalorc.MySqlDatabaseWrapper</RootNamespace>
-        <Version>3.0.2</Version>
+        <Version>4.1.0</Version>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>Pustalorc</Authors>
         <Description>Library that wraps Connector/NET and MySqlConnector in order to reduce duplicate code when interacting with either connector.</Description>
@@ -15,12 +15,12 @@
         <PackageTags>MySql MySql.Data MySqlConnector Connector Wrapper</PackageTags>
         <PackageReleaseNotes>Multiple changes, primarily the caching library was removed, and both separate versions for MySql.Data and MySqlConnector were merged.</PackageReleaseNotes>
         <PackageId>Pustalorc.MySqlConnectorWrapper</PackageId>
-        <PackageVersion>4.0.0</PackageVersion>
+        <PackageVersion>4.1.0</PackageVersion>
         <Product>Pustalorc.MySqlConnectorWrapper</Product>
         <LangVersion>10</LangVersion>
         <Nullable>enable</Nullable>
         <AssemblyVersion>4.0.0</AssemblyVersion>
-        <FileVersion>4.0.0</FileVersion>
+        <FileVersion>4.1.0</FileVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -29,9 +29,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="JetBrains.Annotations" Version="2021.3.0" />
-        <PackageReference Include="MySql.Data" Version="8.0.28" />
-        <PackageReference Include="MySqlConnector" Version="2.1.6" />
+        <PackageReference Include="JetBrains.Annotations" Version="2021.3.0"/>
+        <PackageReference Include="MySql.Data" Version="8.0.28"/>
+        <PackageReference Include="MySqlConnector" Version="2.1.7"/>
     </ItemGroup>
 
 </Project>
