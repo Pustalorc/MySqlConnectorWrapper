@@ -63,6 +63,7 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
     /// If it can't, the exception is returned so it can be formatted or reused as necessary.
     /// </remarks>
     [UsedImplicitly]
+    [Obsolete("Use TestConnection() or TestConnectionAsync() instead. Return value was changed to the exception itself as to not need double checks.")]
     public virtual bool TestConnection(out Exception? exception)
     {
         exception = null;
@@ -76,6 +77,62 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
         {
             exception = ex;
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Tests the connection to see if we can correctly connect to the database from the configuration provided.
+    /// </summary>
+    /// <returns>
+    /// Null if the connection was established successfully.
+    /// Otherwise it returns the exception that was thrown.
+    /// </returns>
+    /// <remarks>
+    /// It is recommended to run this method first before running ExecuteQuery, in order to test if the connection can be established.
+    /// If it can't, the exception is returned so it can be formatted or reused as necessary.
+    /// </remarks>
+    [UsedImplicitly]
+    public virtual Exception? TestConnection()
+    {
+        try
+        {
+            using var connection = GetConnection();
+            connection.Open();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return ex;
+        }
+    }
+
+    /// <summary>
+    /// Tests the connection to see if we can correctly connect to the database from the configuration provided.
+    /// </summary>
+    /// <returns>
+    /// Null if the connection was established successfully.
+    /// Otherwise it returns the exception that was thrown.
+    /// </returns>
+    /// <remarks>
+    /// It is recommended to run this method first before running ExecuteQuery, in order to test if the connection can be established.
+    /// If it can't, the exception is returned so it can be formatted or reused as necessary.
+    /// </remarks>
+    [UsedImplicitly]
+    public virtual async Task<Exception?> TestConnectionAsync()
+    {
+        try
+        {
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
+            await using var connection = GetConnection();
+#else
+            using var connection = GetConnection();
+#endif
+            await connection.OpenAsync();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return ex;
         }
     }
 
@@ -212,7 +269,17 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
         }
 
         var constructedOutput = new QueryOutput(query, output);
-        query.Callback?.Invoke(constructedOutput, connection, transaction);
+
+        if (query.Callback != null)
+            query.Callback(constructedOutput, connection, transaction);
+        else if (query.AsyncCallback != null)
+            // If we do not do Task.Run and we instead .Wait() the original returned task, then when the callback runs an await on an async method, we'd be in a deadlock.
+#if NET5_0_OR_GREATER
+            Task.Run(async Task?() => await query.AsyncCallback(constructedOutput, connection, transaction)).Wait();
+#else
+            Task.Run(async Task() => await query.AsyncCallback(constructedOutput, connection, transaction)).Wait();
+#endif
+
         return constructedOutput;
     }
 
@@ -289,7 +356,28 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
     /// </summary>
     /// <param name="queryString">The query string to execute.</param>
     /// <param name="type">The type of the query, by default a NonQuery</param>
-    /// <param name="callback">A callback to raise after query execution.</param>
+    /// <param name="callback">A synchronous callback to raise after query execution.</param>
+    /// <param name="parameters">The parameters to bind to the query before execution.</param>
+    /// <returns>An instance of <see cref="QueryOutput"/>, where QueryOutput.Result is the result from the underlying DbConnection Execute methods.</returns>
+    /// <remarks>
+    /// This method constructs the query and is meant to be used as a quicker way to execute a very precise query without having to run "new Query()" every time.
+    /// </remarks>
+    [UsedImplicitly]
+    [Obsolete(
+        "Use ExecuteQueryAsync with the Func callback type (add `async Task` before the parameter declaration of the anonymous function, or change the definition of the method you passed to this method from `void` to `async Task`",
+        true)]
+    public virtual async Task<QueryOutput> ExecuteQueryAsync(string queryString, EQueryType type,
+        Action<QueryOutput, DbConnection, DbTransaction?>? callback, params DbParameter[] parameters)
+    {
+        return await ExecuteQueryAsync(new Query(queryString, type, callback, parameters));
+    }
+
+    /// <summary>
+    /// Executes a query with the provided information.
+    /// </summary>
+    /// <param name="queryString">The query string to execute.</param>
+    /// <param name="type">The type of the query, by default a NonQuery</param>
+    /// <param name="asyncCallback">An asynchronous callback to raise after query execution.</param>
     /// <param name="parameters">The parameters to bind to the query before execution.</param>
     /// <returns>An instance of <see cref="QueryOutput"/>, where QueryOutput.Result is the result from the underlying DbConnection Execute methods.</returns>
     /// <remarks>
@@ -297,9 +385,9 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
     /// </remarks>
     [UsedImplicitly]
     public virtual async Task<QueryOutput> ExecuteQueryAsync(string queryString, EQueryType type = EQueryType.NonQuery,
-        Action<QueryOutput, DbConnection, DbTransaction?>? callback = null, params DbParameter[] parameters)
+        Func<QueryOutput, DbConnection, DbTransaction?, Task>? asyncCallback = null, params DbParameter[] parameters)
     {
-        return await ExecuteQueryAsync(new Query(queryString, type, callback, parameters));
+        return await ExecuteQueryAsync(new Query(queryString, type, asyncCallback, parameters));
     }
 
     /// <summary>
@@ -311,7 +399,7 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
     [UsedImplicitly]
     public virtual async Task<QueryOutput> ExecuteQueryAsync(Query query)
     {
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
         await using var connection = GetConnection();
 #else
         using var connection = GetConnection();
@@ -328,7 +416,34 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
     /// <param name="transaction">The transaction currently in use by the connection and for the execution of this query.</param>
     /// <param name="queryString">The query string to execute.</param>
     /// <param name="type">The type of the query, by default a NonQuery</param>
-    /// <param name="callback">A callback to raise after query execution.</param>
+    /// <param name="callback">A synchronous callback to raise after query execution.</param>
+    /// <param name="parameters">The parameters to bind to the query before execution.</param>
+    /// <returns>An instance of <see cref="QueryOutput"/>, where QueryOutput.Result is the result from the underlying DbConnection Execute methods.</returns>
+    /// <remarks>
+    /// This method constructs the query and is meant to be used as a quicker way to execute a very precise query without having to run "new Query()" every time.
+    /// The connection provided to this method MUST BE open, otherwise execution will fail.
+    /// The transaction by default can be null, but if a transaction is open, it is recommended to pass that here.
+    /// </remarks>
+    [UsedImplicitly]
+    [Obsolete(
+        "Use ExecuteQueryWithOpenConnectionAsync with the Func callback type (add `async Task` before the parameter declaration of the anonymous function, or change the definition of the method you passed to this method from `void` to `async Task`",
+        true)]
+    public virtual async Task<QueryOutput> ExecuteQueryWithOpenConnectionAsync(DbConnection connection,
+        DbTransaction? transaction, string queryString, EQueryType type,
+        Action<QueryOutput, DbConnection, DbTransaction?>? callback, params DbParameter[] parameters)
+    {
+        return await ExecuteQueryWithOpenConnectionAsync(connection, transaction,
+            new Query(queryString, type, callback, parameters));
+    }
+
+    /// <summary>
+    /// Executes a query with the provided information and open connection and available transaction (if any).
+    /// </summary>
+    /// <param name="connection">The open connection to the database.</param>
+    /// <param name="transaction">The transaction currently in use by the connection and for the execution of this query.</param>
+    /// <param name="queryString">The query string to execute.</param>
+    /// <param name="type">The type of the query, by default a NonQuery</param>
+    /// <param name="asyncCallback">An asynchronous callback to raise after query execution.</param>
     /// <param name="parameters">The parameters to bind to the query before execution.</param>
     /// <returns>An instance of <see cref="QueryOutput"/>, where QueryOutput.Result is the result from the underlying DbConnection Execute methods.</returns>
     /// <remarks>
@@ -338,12 +453,11 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
     /// </remarks>
     [UsedImplicitly]
     public virtual async Task<QueryOutput> ExecuteQueryWithOpenConnectionAsync(DbConnection connection,
-        DbTransaction? transaction,
-        string queryString, EQueryType type = EQueryType.NonQuery,
-        Action<QueryOutput, DbConnection, DbTransaction?>? callback = null, params DbParameter[] parameters)
+        DbTransaction? transaction, string queryString, EQueryType type = EQueryType.NonQuery,
+        Func<QueryOutput, DbConnection, DbTransaction?, Task>? asyncCallback = null, params DbParameter[] parameters)
     {
         return await ExecuteQueryWithOpenConnectionAsync(connection, transaction,
-            new Query(queryString, type, callback, parameters));
+            new Query(queryString, type, asyncCallback, parameters));
     }
 
     /// <summary>
@@ -361,7 +475,7 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
     public virtual async Task<QueryOutput> ExecuteQueryWithOpenConnectionAsync(DbConnection connection,
         DbTransaction? transaction, Query query)
     {
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
         await using var command = connection.CreateCommand();
 #else
         using var command = connection.CreateCommand();
@@ -387,7 +501,7 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
             case EQueryType.Reader:
                 var readerResult = new List<Row>();
 
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
                 await using (var reader = await command.ExecuteReaderAsync())
 #else
                 using (var reader = await command.ExecuteReaderAsync())
@@ -407,7 +521,7 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
                     }
                     finally
                     {
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
                         await reader.CloseAsync();
 #else
                         reader.Close();
@@ -420,7 +534,12 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
         }
 
         var constructedOutput = new QueryOutput(query, output);
-        query.Callback?.Invoke(constructedOutput, connection, transaction);
+
+        if (query.Callback != null)
+            query.Callback(constructedOutput, connection, transaction);
+        else if (query.AsyncCallback != null)
+            await query.AsyncCallback(constructedOutput, connection, transaction);
+
         return constructedOutput;
     }
 
@@ -439,7 +558,7 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
     [UsedImplicitly]
     public virtual async Task<List<QueryOutput>> ExecuteTransactionAsync(params Query[] queries)
     {
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
         await using var connection = GetConnection();
 #else
         using var connection = GetConnection();
@@ -466,7 +585,7 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
     public virtual async Task<List<QueryOutput>> ExecuteTransactionWithOpenConnectionAsync(DbConnection connection,
         params Query[] queries)
     {
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
         await using var transaction = await connection.BeginTransactionAsync();
 #else
         using var transaction = connection.BeginTransaction();
@@ -479,7 +598,7 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
             foreach (var query in queries)
                 output.Add(await ExecuteQueryWithOpenConnectionAsync(connection, transaction, query));
 
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
             await transaction.CommitAsync();
 #else
             transaction.Commit();
@@ -488,7 +607,7 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
         }
         catch
         {
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
             await transaction.RollbackAsync();
 #else
             transaction.Rollback();
