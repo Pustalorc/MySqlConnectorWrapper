@@ -63,7 +63,8 @@ public abstract class DatabaseConnectorWrapper<TConnectorConfiguration>
     /// If it can't, the exception is returned so it can be formatted or reused as necessary.
     /// </remarks>
     [UsedImplicitly]
-    [Obsolete("Use TestConnection() or TestConnectionAsync() instead. Return value was changed to the exception itself as to not need double checks.")]
+    [Obsolete(
+        "Use TestConnection() or TestConnectionAsync() instead. Return value was changed to the exception itself as to not need double checks.")]
     public virtual bool TestConnection(out Exception? exception)
     {
         exception = null;

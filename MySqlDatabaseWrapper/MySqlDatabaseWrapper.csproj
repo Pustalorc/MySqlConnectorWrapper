@@ -13,17 +13,22 @@
         <RepositoryUrl>https://github.com/Pustalorc/MySqlConnectorWrapper</RepositoryUrl>
         <RepositoryType>Github</RepositoryType>
         <PackageTags>MySql MySql.Data MySqlConnector Connector Wrapper</PackageTags>
-        <PackageReleaseNotes>Updated the following libraries:
-JetBrains.Annotations: 2021.3.0 -&gt; 2022.1.0
-MySql.Data: 8.0.28 -&gt; 8.0.29
-MySqlConnector: 2.1.7 -&gt; 2.1.10</PackageReleaseNotes>
+        <PackageReleaseNotes>Added the following methods for better value retrieval support for Reader results:
+
+For Row type:
+- T? GetColumnValue&lt;T&gt;(string columnName, T? defaultIfNot = default)
+- T? GetColumnValue&lt;T&gt;(int index, T? defaultIfNot = default)
+
+For Column type:
+- T? GetTFromValue&lt;T&gt;(T? defaultIfNot = default)
+- bool IsValueNull()</PackageReleaseNotes>
         <PackageId>Pustalorc.MySqlConnectorWrapper</PackageId>
-        <PackageVersion>4.1.1</PackageVersion>
+        <PackageVersion>4.1.2</PackageVersion>
         <Product>Pustalorc.MySqlConnectorWrapper</Product>
         <LangVersion>10</LangVersion>
         <Nullable>enable</Nullable>
         <AssemblyVersion>4.0.0</AssemblyVersion>
-        <FileVersion>4.1.1</FileVersion>
+        <FileVersion>4.1.2</FileVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">

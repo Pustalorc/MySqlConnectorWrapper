@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using JetBrains.Annotations;
@@ -45,5 +46,35 @@ public class Row
     /// Gets a column by index.
     /// </summary>
     /// <param name="index">The index of the column.</param>
+    /// <exception cref="IndexOutOfRangeException"></exception>
     public Column this[int index] => Columns[index];
+
+    /// <summary>
+    /// Attempts to get a value of type T from the result in this class.
+    /// </summary>
+    /// <param name="columnName">The name of the column to get the value from.</param>
+    /// <param name="defaultIfNot">A default value in the scenario where the value from the column is not of type T, or the column is not found.</param>
+    /// <typeparam name="T">The type to get for the column's value.</typeparam>
+    /// <returns>The instance of type T from the column's value, or defaultIfNull if the result is not of type T.</returns>
+    [UsedImplicitly]
+    public T? GetColumnValue<T>(string columnName, T? defaultIfNot = default)
+    {
+        return IndexedColumns.TryGetValue(columnName, out var value)
+            ? this[value].GetTFromValue(defaultIfNot)
+            : defaultIfNot;
+    }
+
+    /// <summary>
+    /// Attempts to get a value of type T from the result in this class.
+    /// </summary>
+    /// <param name="index">The index of the column to get the value from.</param>
+    /// <param name="defaultIfNot">A default value in the scenario where the value from the column is not of type T, or the column is not found.</param>
+    /// <typeparam name="T">The type to get for the column's value.</typeparam>
+    /// <returns>The instance of type T from the column's value, or defaultIfNull if the result is not of type T.</returns>
+    /// <exception cref="IndexOutOfRangeException"></exception>
+    [UsedImplicitly]
+    public T? GetColumnValue<T>(int index, T? defaultIfNot = default)
+    {
+        return this[index].GetTFromValue(defaultIfNot);
+    }
 }

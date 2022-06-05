@@ -8,7 +8,7 @@ namespace Pustalorc.MySqlDatabaseWrapper.Implementations;
 
 /// <inheritdoc />
 /// <summary>
-/// A wrapper for MySql.Data v8.0.28
+/// A wrapper for MySql.Data v8.0.29
 /// </summary>
 [UsedImplicitly]
 public class MySqlDataWrapper<TConnectorConfiguration> : DatabaseConnectorWrapper<TConnectorConfiguration>
