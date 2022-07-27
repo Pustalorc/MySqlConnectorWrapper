@@ -1,7 +1,7 @@
 ﻿using System.Data.Common;
 using JetBrains.Annotations;
 using MySqlConnector;
-using Pustalorc.MySqlDatabaseWrapper.Abstraction;
+using Pustalorc.MySqlDatabaseWrapper.Abstractions;
 using Pustalorc.MySqlDatabaseWrapper.Configuration;
 
 namespace Pustalorc.MySqlDatabaseWrapper.Implementations;
@@ -11,34 +11,22 @@ namespace Pustalorc.MySqlDatabaseWrapper.Implementations;
 /// A wrapper for MySqlConnector v2.1.10
 /// </summary>
 [UsedImplicitly]
-public class MySqlConnectorWrapper<TConnectorConfiguration> : DatabaseConnectorWrapper<TConnectorConfiguration>
-    where TConnectorConfiguration : IConnectorConfiguration
+public class MySqlConnectorWrapper<TMySqlConfiguration> : MySqlConnectionWrapper<TMySqlConfiguration>
+    where TMySqlConfiguration : IMySqlConfiguration
 {
     /// <inheritdoc />
-    public MySqlConnectorWrapper(TConnectorConfiguration configuration) : base(configuration,
-        new MySqlConnectionStringBuilder(configuration.ConnectionString)
-        {
-            Server = configuration.MySqlServerAddress, Port = configuration.MySqlServerPort,
-            Database = configuration.DatabaseName, UserID = configuration.DatabaseUsername,
-            Password = configuration.DatabasePassword
-        })
+    public MySqlConnectorWrapper(TMySqlConfiguration configuration) : base(configuration)
     {
-    }
-
-    /// <inheritdoc />
-    protected override DbConnectionStringBuilder GetConnectionStringBuilder()
-    {
-        return new MySqlConnectionStringBuilder(Configuration.ConnectionString)
-        {
-            Server = Configuration.MySqlServerAddress, Port = Configuration.MySqlServerPort,
-            Database = Configuration.DatabaseName, UserID = Configuration.DatabaseUsername,
-            Password = Configuration.DatabasePassword
-        };
     }
 
     /// <inheritdoc />
     protected override DbConnection GetConnection()
     {
-        return new MySqlConnection(ConnectionString);
+        return new MySqlConnection(new MySqlConnectionStringBuilder(Configuration.ConnectionString)
+        {
+            Server = Configuration.MySqlServerAddress, Port = Configuration.MySqlServerPort,
+            Database = Configuration.DatabaseName, UserID = Configuration.DatabaseUsername,
+            Password = Configuration.DatabasePassword
+        }.ConnectionString);
     }
 }

@@ -3,7 +3,7 @@ namespace Pustalorc.MySqlDatabaseWrapper.Configuration;
 /// <summary>
 /// Basic configuration required for the connector to work properly.
 /// </summary>
-public interface IConnectorConfiguration
+public interface IMySqlConfiguration
 {
     /// <summary>
     /// The address (IP or Domain Name) of the database.

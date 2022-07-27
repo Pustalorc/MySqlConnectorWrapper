@@ -2,7 +2,7 @@ using System;
 using System.Data.Common;
 using System.Linq;
 using System.Threading;
-using Pustalorc.MySqlDatabaseWrapper.DatabaseTypes.Execution;
+using Pustalorc.Libraries.DbConnectionWrapper.QueryAbstraction;
 using Pustalorc.MySqlDatabaseWrapper.Implementations;
 using Xunit;
 
@@ -48,7 +48,7 @@ public sealed class MySqlDataWrapperTests
         Database.ExecuteTransaction(new Query("DROP TABLE `test`;"), new Query("DROP TABLE `test2`;"),
             new Query("DROP TABLE `test3`;"));
 
-        Assert.True(allOut.All(k => !k.IsResultNull()));
+        Assert.True(allOut.All(k => k.Result is not null));
     }
 
     [Fact]
@@ -58,16 +58,13 @@ public sealed class MySqlDataWrapperTests
             Database.ExecuteQuery("SHOW TABLES LIKE 'test';", EQueryType.Scalar, NestedQueryInQueryTestCallback);
 
         Database.ExecuteQuery("DROP TABLE `test`;");
-        Assert.True(output.GetTFromResult(false));
+        Assert.True(output.Result is null);
     }
 
     private void NestedQueryInQueryTestCallback(QueryOutput output, DbConnection connection, DbTransaction? transaction)
     {
         if (string.Equals(output.GetTFromResult<string>(), "test", StringComparison.OrdinalIgnoreCase))
-        {
-            output.Result = true;
             return;
-        }
 
         Database.ExecuteQueryWithOpenConnection(connection, transaction,
             "CREATE TABLE `test` (`id` VARCHAR(5) NOT NULL);");
@@ -76,8 +73,8 @@ public sealed class MySqlDataWrapperTests
             Database.ExecuteQueryWithOpenConnection(connection, transaction, "SHOW TABLES LIKE 'test';",
                 EQueryType.Scalar);
 
-        output.Result = string.Equals("test", secondaryOutput.GetTFromResult<string>(),
-            StringComparison.OrdinalIgnoreCase);
+        Assert.True(string.Equals("test", secondaryOutput.GetTFromResult<string>(),
+            StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -87,7 +84,7 @@ public sealed class MySqlDataWrapperTests
             callback: NestedTransactionInQueryTestCallback);
 
         Database.ExecuteQuery("DROP TABLE `test`;");
-        Assert.True(output.GetTFromResult(false));
+        Assert.True(output.GetNonQueryResult() == 0);
     }
 
     private void NestedTransactionInQueryTestCallback(QueryOutput queryOutput, DbConnection connection,
@@ -102,7 +99,7 @@ public sealed class MySqlDataWrapperTests
         var output = Database.ExecuteQueryWithOpenConnection(connection, transaction, "SELECT COUNT(*) FROM `test`;",
             EQueryType.Scalar);
 
-        queryOutput.Result = output.GetTFromResult(long.MaxValue) == 5;
+        Assert.True(output.GetTFromResult<long>() == 5);
     }
 
     [Fact]
