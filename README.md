@@ -3,22 +3,23 @@
 Library that wraps [Connector/NET (aka: MySql.Data)](https://www.nuget.org/packages/MySql.Data/) and [MySqlConnector](https://www.nuget.org/packages/MySqlConnector/) in order to reduce duplicate code when interacting with the connectors.
 
 # Installation & Usage
-***
 
-Before you begin, please make sure that your current solution has installed the nuget package of this library.
+Before you begin, please make sure that your current solution has installed the nuget package of this library.  
 You can find this package [here.](https://www.nuget.org/packages/Pustalorc.MySqlConnectorWrapper)
+
+Note that this package also utilizes the following package: [DbConnectionWrapper](https://www.nuget.org/packages/Pustalorc.DbConnectionWrapper)
 
 ## Configuration Setup
 
 Firstly, you need a configuration for the connector to use.
 Without a configuration, the connector will not know what server to connect to, which database to use, which user to use, etc.
 
-You will want to create a class and have it inherit the Interface `IConnectorConfiguration`.
-You are free to include extra information in this class to use, such as table names.
+You will want to create a class and have it inherit the interface `IConnectorConfiguration`  
+You are free to include extra information in this class to use, such as table names.  
 For example:
 
 ```C#
-public class DatabaseConfig : IConnectorConfiguration
+public class DatabaseConfig : IMySqlConfiguration
 {
     public string MySqlServerAddress => "127.0.0.1";
     public ushort MySqlServerPort => 3306;
@@ -28,16 +29,17 @@ public class DatabaseConfig : IConnectorConfiguration
     public string ConnectionString => "";
 }
 ```
-Note: These are `{ get; }` only properties, but you can make them `{ get; set; }` if you wish to be able to modify them mid run-time, or if you wish to serialize them into a configuration file.
-`ConnectionString` is also available and used on the `DbConnectionStringBuilder` classes to build a full connection string with the provided details.
+Note: These are `{ get; }` only properties, but you can make them `{ get; set; }` if you wish to be able to modify them mid run-time, or if you wish to serialize them into a configuration file.  
+`ConnectionString` is also available and used on the connection string builder classes to build a full connection string with the provided details, and make the process easier for the user.
 
 ## Wrapper setup
 
-Once you have a configuration and you think you are ready to move on, you can then use the connector wrapping.
-
+Once you have a configuration and you think you are ready to move on, you can then use the connector wrapping.  
 There are 2 default implementations of the wrapper, one for [MySql.Data](https://www.nuget.org/packages/MySql.Data) and one for [MySqlConnector](https://www.nuget.org/packages/MySqlConnector).
 
-If either one of these doesn't fit your use case, you can always create your own by inheriting from `DatabaseConnectorWrapper` and overriding things as necessary.
+If either one of these doesn't fit your use case, you can always create your own by inheriting from `MySqlConnectionWrapper` and overriding things as necessary.  
+Please note, if you want to adopt the wrapping to other database systems, you can, and should, use this other project: [DbConnectionWrapper](https://github.com/Pustalorc/DbConnectionWrapper).  
+This other project will not work for connetors that do not use the [DbConnection](https://docs.microsoft.com/en-us/dotnet/api/system.data.common.dbconnection) class from [ADO.NET](https://docs.microsoft.com/en-us/dotnet/framework/data/adonet/).
 
 Since both wrappers function the same and are abstract to the point where they are virtually identical in method calls, I'll be using the MySqlConnector wrapper:
 
@@ -49,8 +51,9 @@ public class MyDatabaseLayerClass
     public MyDatabaseLayerClass(DatabaseConfig config)
     {
         Database = new MySqlConnectorWrapper<DatabaseConfig>(config);
+        var exception = Database.TestConnection();
 
-        if (!Database.TestConnection(out var exception))
+        if (exception is not null)
         {
             Log.Exception(exception);
             throw exception;
@@ -63,7 +66,7 @@ public class MyDatabaseLayerClass
     {
         var output = Database.ExecuteQuery($"SHOW TABLES LIKE '{Configuration.TableName}';", EQueryType.Scalar);
 
-        if (!output.IsResultNull()) return;
+        if (output.Result is not null) return;
 
         Database.ExecuteQuery(new Query($"CREATE TABLE `{Configuration.TableName}` (`Id` INT NOT NULL, PRIMARY KEY (`Id`));"));
     }
